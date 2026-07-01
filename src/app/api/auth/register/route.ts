@@ -52,8 +52,15 @@ export async function POST(req: Request) {
       role: "student"
     });
 
-    // 5. Send Email with credentials
-    await sendAccountEmail(email, fullName, randomPass);
+    // 5. Send account activation email with password setup link
+    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
+    const safeBaseUrl = baseUrl.endsWith("/") ? baseUrl.slice(0, -1) : baseUrl;
+    const setPasswordLink = await adminAuth.generatePasswordResetLink(email, {
+      url: `${safeBaseUrl}/dang-nhap`,
+      handleCodeInApp: false,
+    });
+
+    await sendAccountEmail(email, fullName, setPasswordLink);
 
     return NextResponse.json(
       { message: "Tạo tài khoản và gửi email thành công" },
