@@ -8,7 +8,8 @@ export function Highlights() {
     "Gia tăng hiệu quả sáng tạo và quản lý thời gian",
     "Chứng nhận tham gia được cấp bới Google",
     "Quà tặng lưu niệm độc quyền",
-    " Networking với diễn giả và các bạn sinh viên"
+    "Networking với diễn giả và các bạn sinh viên",
+    "Nhận tài liệu và thực hành trực tiếp trong suốt chương trình"
   ];
 
   return (
