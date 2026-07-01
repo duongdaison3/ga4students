@@ -1,4 +1,5 @@
 import React from "react";
+import Link from "next/link";
 import { ArrowRight, Send } from "lucide-react";
 
 export function Hero() {
@@ -46,9 +47,9 @@ export function Hero() {
 
             {/* CTA & Phụ đề */}
             <div className="flex flex-col items-start gap-4">
-              <button className="bg-[#4285F4] hover:bg-blue-600 text-white px-8 py-3 rounded text-sm font-semibold transition-colors">
+              <Link href="/dang-ky" className="inline-flex bg-[#4285F4] hover:bg-blue-600 text-white px-8 py-3 rounded text-sm font-semibold transition-colors">
                 Đăng ký ngay
-              </button>
+              </Link>
 
               <div className="flex flex-col gap-2 text-sm text-slate-600 italic">
                 <span>Thời gian diễn ra: 01/07/2026 - 01/10/2026</span>
