@@ -6,6 +6,9 @@ export function Highlights() {
     "Nâng cao năng suất, tối ưu thời gian nghiên cứu và làm việc",
     "Trang bị kỹ năng số để phát triển lợi thế cạnh tranh",
     "Gia tăng hiệu quả sáng tạo và quản lý thời gian",
+    "Chứng nhận tham gia được cấp bới Google",
+    "Quà tặng lưu niệm độc quyền",
+    " Networking với diễn giả và các bạn sinh viên"
   ];
 
   return (
