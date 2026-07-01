@@ -16,9 +16,7 @@ export function Speaker() {
           <div className="w-48 h-48 md:w-64 md:h-64 flex-shrink-0 relative">
             <div className="absolute inset-0 bg-gradient-to-tr from-[#4285F4] to-[#34A853] rounded-full blur-2xl opacity-40"></div>
             <div className="w-full h-full rounded-full border-4 border-white shadow-xl overflow-hidden relative z-10 bg-white flex items-center justify-center">
-              <User className="w-24 h-24 text-slate-300" />
-              {/* TODO: Khi có ảnh thực tế, bạn có thể xóa thẻ <User /> ở trên và mở comment thẻ <img /> bên dưới */}
-              {/* <img src="/avatar-dien-gia.jpg" alt="Diễn giả" className="w-full h-full object-cover" /> */}
+              <img src="public/speaker.jpg" alt="Diễn giả" className="w-full h-full object-cover" />
             </div>
           </div>
 
@@ -26,10 +24,10 @@ export function Speaker() {
           <div className="flex-1 text-center md:text-left">
             <h3 className="text-3xl font-extrabold text-slate-900 mb-2">Dương Đại Sơn</h3>
             <p className="text-[#4285F4] font-bold text-lg mb-6">Google Student Ambassador (GSA Trainer)</p>
-            
+
             <p className="text-slate-600 mb-8 leading-relaxed">
-              Xin chào! Mình là Sơn, diễn giả và người đồng hành cùng các bạn trong suốt chuỗi chương trình Gemini Academy for Students. 
-              Với đam mê công nghệ và kinh nghiệm ứng dụng AI vào thực tiễn, mình mong muốn được chia sẻ những kỹ năng hữu ích nhất 
+              Xin chào! Mình là Sơn, người chia sẻ và đồng hành cùng các bạn trong suốt chuỗi chương trình Gemini Academy for Students trên website này.
+              Với đam mê công nghệ và kinh nghiệm ứng dụng AI vào thực tiễn, mình mong muốn được chia sẻ những kỹ năng hữu ích nhất
               để giúp các bạn sinh viên tối ưu hóa hiệu suất học tập và làm việc.
             </p>
 
