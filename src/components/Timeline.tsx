@@ -34,7 +34,15 @@ export function Timeline() {
         body: JSON.stringify({ workshopId: moduleId, workshopTitle: moduleTitle })
       });
       
-      const data = await response.json();
+      const textResponse = await response.text();
+      let data;
+      try {
+        data = JSON.parse(textResponse);
+      } catch (e) {
+        console.error("Non-JSON response:", textResponse);
+        throw new Error("Hệ thống đang gặp lỗi xử lý. Vui lòng thử lại sau.");
+      }
+
       if (!response.ok) {
         throw new Error(data.error || "Đăng ký thất bại");
       }

@@ -34,7 +34,14 @@ export default function RegisterPage() {
         body: JSON.stringify(formData),
       });
       
-      const data = await response.json();
+      const textResponse = await response.text();
+      let data;
+      try {
+        data = JSON.parse(textResponse);
+      } catch (e) {
+        console.error("Non-JSON response:", textResponse);
+        throw new Error("Lỗi máy chủ: Không thể xử lý yêu cầu. Vui lòng kiểm tra lại cấu hình trên server (Environment Variables).");
+      }
       
       if (!response.ok) {
         throw new Error(data.error || "Đăng ký thất bại");
