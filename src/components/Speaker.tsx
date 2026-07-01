@@ -16,7 +16,7 @@ export function Speaker() {
           <div className="w-48 h-48 md:w-64 md:h-64 flex-shrink-0 relative">
             <div className="absolute inset-0 bg-gradient-to-tr from-[#4285F4] to-[#34A853] rounded-full blur-2xl opacity-40"></div>
             <div className="w-full h-full rounded-full border-4 border-white shadow-xl overflow-hidden relative z-10 bg-white flex items-center justify-center">
-              <img src="public/speaker.jpg" alt="Diễn giả" className="w-full h-full object-cover" />
+              <img src="/speaker.jpg" alt="Diễn giả" className="w-full h-full object-cover" />
             </div>
           </div>
 
@@ -36,7 +36,7 @@ export function Speaker() {
                 <div className="h-10 w-10 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0">
                   <Award className="h-5 w-5 text-[#4285F4]" />
                 </div>
-                <div className="text-sm font-medium text-slate-700 text-left">Chuyên gia đào tạo ứng dụng AI</div>
+                <div className="text-sm font-medium text-slate-700 text-left">Chứng nhận Google AI và AI for All</div>
               </div>
               <div className="flex items-center gap-3">
                 <div className="h-10 w-10 rounded-full bg-green-100 flex items-center justify-center flex-shrink-0">
