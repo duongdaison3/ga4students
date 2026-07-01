@@ -3,6 +3,8 @@ import { adminAuth, adminDb } from "@/lib/firebase-admin";
 import { sendAccountEmail } from "@/lib/email";
 import crypto from "crypto";
 
+export const runtime = "nodejs";
+
 export async function POST(req: Request) {
   try {
     const { fullName, email, phone, university } = await req.json();

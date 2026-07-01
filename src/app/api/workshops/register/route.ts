@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import { adminAuth, adminDb } from "@/lib/firebase-admin";
 import { sendWorkshopRegistrationEmail } from "@/lib/email";
 
+export const runtime = "nodejs";
+
 export async function POST(req: Request) {
   try {
     // 1. Get the Authorization token from headers
