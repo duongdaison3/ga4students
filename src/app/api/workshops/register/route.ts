@@ -60,8 +60,25 @@ export async function POST(req: Request) {
       registeredAt: new Date()
     });
 
+    // Fetch event details to send accurate email
+    const eventRef = adminDb.collection("events").doc(workshopId);
+    const eventDoc = await eventRef.get();
+    let eventData = { date: "", time: "", type: "Online", location: "", meetingLink: "" };
+    if (eventDoc.exists) {
+      const data = eventDoc.data();
+      if (data) {
+        eventData = {
+          date: data.date || "",
+          time: data.time || "",
+          type: data.type || "Online",
+          location: data.location || "",
+          meetingLink: data.meetingLink || ""
+        };
+      }
+    }
+
     // 6. Send confirmation email
-    await sendWorkshopRegistrationEmail(email, fullName, workshopTitle);
+    await sendWorkshopRegistrationEmail(email, fullName, workshopTitle, eventData);
 
     return NextResponse.json(
       { message: "Đăng ký thành công" },

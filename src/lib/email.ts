@@ -49,23 +49,38 @@ export const sendAccountEmail = async (email: string, fullName: string, setPassw
   return info;
 };
 
-export const sendWorkshopRegistrationEmail = async (email: string, fullName: string, workshopTitle: string) => {
+export const sendWorkshopRegistrationEmail = async (
+  email: string, 
+  fullName: string, 
+  workshopTitle: string,
+  eventData?: { date: string, time: string, type: string, location: string, meetingLink: string }
+) => {
+  const locationString = eventData?.type === 'Online' 
+    ? `Google Meet - <strong>Link:</strong> <a href="${eventData?.meetingLink}" style="color: #4285F4; text-decoration: none;">${eventData?.meetingLink}</a>`
+    : (eventData?.location || "Chưa cập nhật");
+
   const mailOptions = {
     from: `"Gemini Academy" <${senderAddress}>`,
     to: email,
     subject: `Xác nhận đăng ký thành công: ${workshopTitle}`,
     text: `Xin chào ${fullName},\n\nBạn đã đăng ký thành công buổi đào tạo: ${workshopTitle}.\n\nVui lòng theo dõi email để nhận thông tin tham gia.`,
     html: `
-      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e2e8f0; border-radius: 10px;">
-        <h2 style="color: #4285F4; text-align: center;">Gemini Academy for Students</h2>
-        <p>Xin chào <strong>${fullName}</strong>,</p>
-        <p>Bạn đã đăng ký tham gia thành công buổi đào tạo:</p>
-        <div style="background-color: #eaf1ff; padding: 15px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #4285F4;">
-          <h3 style="color: #1e293b; margin-top: 0;">${workshopTitle}</h3>
+      <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 600px; margin: 0 auto; color: #334155;">
+        <h2 style="color: #4285F4; text-align: center; margin-bottom: 30px; font-size: 20px;">Gemini Academy for Students</h2>
+        <p style="margin-bottom: 16px;">Xin chào <strong>${fullName}</strong>,</p>
+        <p style="margin-bottom: 24px;">Bạn đã đăng ký tham gia thành công buổi đào tạo:</p>
+        
+        <div style="background-color: #f1f5f9; padding: 20px 24px; border-radius: 8px; margin: 24px 0; border-left: 4px solid #4285F4;">
+          <h3 style="color: #1e293b; margin-top: 0; margin-bottom: 16px; font-size: 18px;">${workshopTitle}</h3>
+          <p style="margin: 0 0 6px 0;"><strong>Ngày:</strong> ${eventData?.date || "Chưa cập nhật"}</p>
+          <p style="margin: 0 0 6px 0;"><strong>Giờ:</strong> ${eventData?.time || "Chưa cập nhật"}</p>
+          <p style="margin: 0;"><strong>Tại:</strong> ${locationString}</p>
         </div>
-        <p>Vui lòng theo dõi email và nhóm lớp để nhận link tham gia và tài liệu trước buổi học.</p>
-        <hr style="border: 0; border-top: 1px solid #e2e8f0; margin: 20px 0;" />
-        <p style="font-size: 12px; color: #94a3b8; text-align: center;">© 2026 GSA Trainers. All rights reserved.</p>
+        
+        <p style="margin-top: 24px;">Vui lòng theo dõi email và nhóm lớp để nhận tài liệu trước buổi học (nếu có).</p>
+        
+        <hr style="border: 0; border-top: 1px solid #f1f5f9; margin: 40px 0 20px 0;" />
+        <p style="font-size: 13px; color: #94a3b8; text-align: center; margin: 0;">© 2026 GSA Trainers. All rights reserved.</p>
       </div>
     `,
   };

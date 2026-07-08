@@ -21,7 +21,6 @@ export default function AdminEvents() {
   const [isLoading, setIsLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
-  // Form State
   const [formData, setFormData] = useState({
     title: "",
     topic: TOPICS[0],
@@ -29,7 +28,9 @@ export default function AdminEvents() {
     mainContent: "",
     date: "",
     time: "",
+    type: "Online",
     location: "Google Meet",
+    meetingLink: "",
     status: "opening"
   });
 
@@ -67,7 +68,7 @@ export default function AdminEvents() {
       // Reset form
       setFormData({
         title: "", topic: TOPICS[0], description: "", mainContent: "",
-        date: "", time: "", location: "Google Meet", status: "opening"
+        date: "", time: "", type: "Online", location: "Google Meet", meetingLink: "", status: "opening"
       });
     } catch (error) {
       alert("Đã xảy ra lỗi khi thêm sự kiện.");
@@ -133,7 +134,10 @@ export default function AdminEvents() {
               <div className="mt-auto space-y-2 text-sm text-slate-500 mb-6">
                 <div><span className="font-medium text-slate-700">Ngày:</span> {event.date}</div>
                 <div><span className="font-medium text-slate-700">Giờ:</span> {event.time}</div>
-                <div><span className="font-medium text-slate-700">Tại:</span> {event.location}</div>
+                <div><span className="font-medium text-slate-700">Hình thức:</span> {event.type === 'Offline' ? event.location : 'Online'}</div>
+                {event.type === 'Online' && event.meetingLink && (
+                  <div><span className="font-medium text-slate-700">Link họp:</span> {event.meetingLink}</div>
+                )}
               </div>
 
               <div className="flex items-center gap-2 border-t border-slate-100 pt-4 mt-auto">
@@ -198,8 +202,22 @@ export default function AdminEvents() {
 
                 <div className="space-y-2">
                   <label className="text-sm font-medium text-slate-700">Hình thức <span className="text-red-500">*</span></label>
-                  <input required type="text" placeholder="VD: Google Meet" value={formData.location} onChange={e => setFormData({ ...formData, location: e.target.value })} className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-[#4285F4] focus:outline-none" />
+                  <select required value={formData.type} onChange={e => setFormData({ ...formData, type: e.target.value })} className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-[#4285F4] focus:outline-none">
+                    <option value="Online">Online</option>
+                    <option value="Offline">Offline</option>
+                  </select>
                 </div>
+                {formData.type === "Online" ? (
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium text-slate-700">Link cuộc họp <span className="text-red-500">*</span></label>
+                    <input required type="text" placeholder="VD: https://meet.google.com/..." value={formData.meetingLink} onChange={e => setFormData({ ...formData, meetingLink: e.target.value })} className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-[#4285F4] focus:outline-none" />
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium text-slate-700">Địa điểm (Tại) <span className="text-red-500">*</span></label>
+                    <input required type="text" placeholder="VD: Tòa nhà FPT" value={formData.location} onChange={e => setFormData({ ...formData, location: e.target.value })} className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-[#4285F4] focus:outline-none" />
+                  </div>
+                )}
                 <div className="space-y-2">
                   <label className="text-sm font-medium text-slate-700">Trạng thái ban đầu</label>
                   <select value={formData.status} onChange={e => setFormData({ ...formData, status: e.target.value })} className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-[#4285F4] focus:outline-none">
