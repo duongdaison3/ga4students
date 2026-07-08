@@ -1,6 +1,5 @@
 import { Navbar } from "@/components/Navbar";
 import { UpcomingEvents } from "@/components/UpcomingEvents";
-import { Timeline } from "@/components/Timeline";
 import { Footer } from "@/components/Footer";
 
 export const metadata = {
@@ -15,7 +14,6 @@ export default function EventsPage() {
       <main className="flex-1">
         <UpcomingEvents />
         <div id="ongoing"></div>
-        <Timeline />
       </main>
       <Footer />
     </div>

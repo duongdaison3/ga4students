@@ -1,6 +1,7 @@
 import { Navbar } from "@/components/Navbar";
 import { Hero } from "@/components/Hero";
 import { Highlights } from "@/components/Highlights";
+import { Timeline } from "@/components/Timeline";
 import { Speaker } from "@/components/Speaker";
 import { Footer } from "@/components/Footer";
 
@@ -11,6 +12,7 @@ export default function Home() {
       <main className="flex-1">
         <Hero />
         <Highlights />
+        <Timeline />
         <Speaker />
       </main>
       <Footer />

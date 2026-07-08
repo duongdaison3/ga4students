@@ -1,60 +1,6 @@
-"use client";
-
-import React, { useState, useEffect } from "react";
-import Link from "next/link";
-import { BookOpen } from "lucide-react";
-import { auth } from "@/lib/firebase";
-import { onAuthStateChanged, User } from "firebase/auth";
+import React from "react";
 
 export function Timeline() {
-  const [user, setUser] = useState<User | null>(null);
-  const [loadingIds, setLoadingIds] = useState<Record<string, boolean>>({});
-  const [successIds, setSuccessIds] = useState<Record<string, boolean>>({});
-
-  useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
-      setUser(currentUser);
-    });
-    return () => unsubscribe();
-  }, []);
-
-  const handleRegister = async (moduleId: string, moduleTitle: string) => {
-    if (!user) return;
-    
-    setLoadingIds(prev => ({ ...prev, [moduleId]: true }));
-    
-    try {
-      const idToken = await user.getIdToken();
-      const response = await fetch("/api/workshops/register", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${idToken}`
-        },
-        body: JSON.stringify({ workshopId: moduleId, workshopTitle: moduleTitle })
-      });
-      
-      const textResponse = await response.text();
-      let data;
-      try {
-        data = JSON.parse(textResponse);
-      } catch (e) {
-        console.error("Non-JSON response:", textResponse);
-        throw new Error("Hệ thống đang gặp lỗi xử lý. Vui lòng thử lại sau.");
-      }
-
-      if (!response.ok) {
-        throw new Error(data.error || "Đăng ký thất bại");
-      }
-      
-      setSuccessIds(prev => ({ ...prev, [moduleId]: true }));
-      alert(`Đăng ký tham gia ${moduleTitle} thành công! Vui lòng kiểm tra email.`);
-    } catch (err: any) {
-      alert(err.message);
-    } finally {
-      setLoadingIds(prev => ({ ...prev, [moduleId]: false }));
-    }
-  };
   const modules = [
     {
       id: "01",
@@ -89,7 +35,7 @@ export function Timeline() {
   ];
 
   return (
-    <section id="timeline" className="py-16">
+    <section id="overview" className="py-16">
       <div className="container mx-auto px-4 md:px-6">
         
         {/* Featured Lesson */}
@@ -148,30 +94,6 @@ export function Timeline() {
                 <p className="text-sm md:text-base text-slate-600 mb-6">
                   {module.desc}
                 </p>
-
-                <div className="mt-auto">
-                  {user ? (
-                    <button
-                      onClick={() => handleRegister(module.id, module.title)}
-                      disabled={loadingIds[module.id] || successIds[module.id]}
-                      className={`w-full py-2.5 rounded-lg text-sm font-bold transition-colors ${
-                        successIds[module.id] 
-                          ? 'bg-green-100 text-green-700 cursor-not-allowed'
-                          : 'bg-[#4285F4] hover:bg-blue-600 text-white shadow-sm'
-                      } ${loadingIds[module.id] ? 'opacity-70 cursor-not-allowed' : ''}`}
-                    >
-                      {loadingIds[module.id] 
-                        ? 'Đang xử lý...' 
-                        : successIds[module.id] 
-                          ? 'Đã đăng ký' 
-                          : 'Đăng ký tham gia'}
-                    </button>
-                  ) : (
-                    <Link href="/dang-nhap" className="block w-full py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-center rounded-lg text-sm font-bold transition-colors">
-                      Đăng nhập để đăng ký
-                    </Link>
-                  )}
-                </div>
               </div>
             </div>
           ))}
