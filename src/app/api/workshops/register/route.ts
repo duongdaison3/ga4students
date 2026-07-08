@@ -51,6 +51,15 @@ export async function POST(req: Request) {
     registeredWorkshops.push(workshopId);
     await userRef.set({ registeredWorkshops }, { merge: true });
 
+    // 5b. Save to registrations collection for admin dashboard
+    await adminDb.collection("registrations").add({
+      eventId: workshopId,
+      userId: uid,
+      userEmail: email,
+      userFullName: fullName,
+      registeredAt: new Date()
+    });
+
     // 6. Send confirmation email
     await sendWorkshopRegistrationEmail(email, fullName, workshopTitle);
 

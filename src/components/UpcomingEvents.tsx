@@ -1,39 +1,42 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { auth } from "@/lib/firebase";
+import { auth, db } from "@/lib/firebase";
 import { onAuthStateChanged, User } from "firebase/auth";
+import { collection, query, where, getDocs, orderBy } from "firebase/firestore";
 import { Calendar, MapPin, Clock, ArrowRight } from "lucide-react";
-
-const upcomingEvents = [
-  {
-    id: "event-01",
-    title: "Workshop: Tối ưu hiệu suất làm việc với Gemini",
-    date: "15/07/2026",
-    time: "19:00 - 21:00",
-    location: "Google Meet",
-    topic: "Productivity Hub",
-    status: "opening" // opening, full, closed
-  },
-  {
-    id: "event-02",
-    title: "Workshop: Khám phá tiềm năng Sáng tạo cùng AI",
-    date: "22/07/2026",
-    time: "19:00 - 21:00",
-    location: "Google Meet",
-    topic: "Creativity Studio",
-    status: "opening"
-  }
-];
 
 export function UpcomingEvents() {
   const [user, setUser] = useState<User | null>(null);
+  const [events, setEvents] = useState<any[]>([]);
   const [processingId, setProcessingId] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
       setUser(currentUser);
     });
+
+    async function fetchEvents() {
+      try {
+        const q = query(
+          collection(db, "events"), 
+          where("status", "==", "opening")
+        );
+        const snap = await getDocs(q);
+        const data = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        // Sort by createdAt client-side since Firestore requires composite index for where + orderBy
+        data.sort((a: any, b: any) => b.createdAt?.toMillis() - a.createdAt?.toMillis());
+        setEvents(data);
+      } catch (error) {
+        console.error("Error fetching upcoming events:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    }
+
+    fetchEvents();
+
     return () => unsubscribe();
   }, []);
 
@@ -95,49 +98,58 @@ export function UpcomingEvents() {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 max-w-5xl mx-auto">
-          {upcomingEvents.map((event) => (
-            <div key={event.id} className="bg-white border border-blue-100 rounded-3xl p-6 md:p-8 shadow-[0_10px_40px_-10px_rgba(66,133,244,0.15)] hover:shadow-[0_20px_50px_-10px_rgba(66,133,244,0.2)] transition-all duration-300 group relative overflow-hidden">
-              <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-blue-50 to-green-50 rounded-bl-full -z-10 group-hover:scale-110 transition-transform duration-500"></div>
-              
-              <div className="inline-block px-3 py-1 bg-slate-100 text-slate-700 text-xs font-bold rounded-full mb-4 uppercase tracking-wider">
-                Chủ đề: {event.topic}
-              </div>
-              
-              <h3 className="text-2xl font-bold text-slate-900 mb-6 group-hover:text-[#4285F4] transition-colors leading-snug">
-                {event.title}
-              </h3>
-              
-              <div className="space-y-4 mb-8">
-                <div className="flex items-center text-slate-700">
-                  <div className="h-10 w-10 rounded-full bg-blue-50 flex items-center justify-center mr-4">
-                    <Calendar className="h-5 w-5 text-[#4285F4]" />
-                  </div>
-                  <div>
-                    <div className="text-xs text-slate-500 font-medium">Ngày tổ chức</div>
-                    <div className="font-bold">{event.date}</div>
-                  </div>
+          {isLoading ? (
+            <div className="col-span-full text-center text-slate-500 py-12">Đang tải lịch học...</div>
+          ) : events.length === 0 ? (
+            <div className="col-span-full text-center text-slate-500 py-12">Hiện tại chưa có sự kiện nào đang mở đăng ký.</div>
+          ) : (
+            events.map((event) => (
+              <div key={event.id} className="bg-white border border-blue-100 rounded-3xl p-6 md:p-8 shadow-[0_10px_40px_-10px_rgba(66,133,244,0.15)] hover:shadow-[0_20px_50px_-10px_rgba(66,133,244,0.2)] transition-all duration-300 group relative overflow-hidden flex flex-col">
+                <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-blue-50 to-green-50 rounded-bl-full -z-10 group-hover:scale-110 transition-transform duration-500"></div>
+                
+                <div className="inline-block self-start px-3 py-1 bg-slate-100 text-slate-700 text-xs font-bold rounded-full mb-4 uppercase tracking-wider">
+                  Chủ đề: {event.topic}
                 </div>
                 
-                <div className="flex items-center text-slate-700">
-                  <div className="h-10 w-10 rounded-full bg-red-50 flex items-center justify-center mr-4">
-                    <Clock className="h-5 w-5 text-[#EA4335]" />
-                  </div>
-                  <div>
-                    <div className="text-xs text-slate-500 font-medium">Thời gian</div>
-                    <div className="font-bold">{event.time}</div>
-                  </div>
-                </div>
+                <h3 className="text-2xl font-bold text-slate-900 mb-2 group-hover:text-[#4285F4] transition-colors leading-snug">
+                  {event.title}
+                </h3>
+
+                <p className="text-sm text-slate-600 mb-6 line-clamp-3">
+                  {event.description}
+                </p>
                 
-                <div className="flex items-center text-slate-700">
-                  <div className="h-10 w-10 rounded-full bg-green-50 flex items-center justify-center mr-4">
-                    <MapPin className="h-5 w-5 text-[#34A853]" />
+                <div className="space-y-4 mb-8 mt-auto">
+                  <div className="flex items-center text-slate-700">
+                    <div className="h-10 w-10 rounded-full bg-blue-50 flex items-center justify-center mr-4">
+                      <Calendar className="h-5 w-5 text-[#4285F4]" />
+                    </div>
+                    <div>
+                      <div className="text-xs text-slate-500 font-medium">Ngày tổ chức</div>
+                      <div className="font-bold">{event.date}</div>
+                    </div>
                   </div>
-                  <div>
-                    <div className="text-xs text-slate-500 font-medium">Hình thức</div>
-                    <div className="font-bold">{event.location}</div>
+                  
+                  <div className="flex items-center text-slate-700">
+                    <div className="h-10 w-10 rounded-full bg-red-50 flex items-center justify-center mr-4">
+                      <Clock className="h-5 w-5 text-[#EA4335]" />
+                    </div>
+                    <div>
+                      <div className="text-xs text-slate-500 font-medium">Thời gian</div>
+                      <div className="font-bold">{event.time}</div>
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-center text-slate-700">
+                    <div className="h-10 w-10 rounded-full bg-green-50 flex items-center justify-center mr-4">
+                      <MapPin className="h-5 w-5 text-[#34A853]" />
+                    </div>
+                    <div>
+                      <div className="text-xs text-slate-500 font-medium">Hình thức</div>
+                      <div className="font-bold">{event.location}</div>
+                    </div>
                   </div>
                 </div>
-              </div>
               
               {user ? (
                 <button 
@@ -157,7 +169,8 @@ export function UpcomingEvents() {
                 </button>
               )}
             </div>
-          ))}
+            ))
+          )}
         </div>
       </div>
     </section>
