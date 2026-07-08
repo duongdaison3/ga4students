@@ -29,9 +29,9 @@ export function Navbar() {
   const navLinks = [
     { name: "Trang chủ", href: "/" },
     { name: "Câu hỏi thường gặp", href: "/faq" },
-    { name: "Sắp diễn ra", href: "/#upcoming" },
-    { name: "Đang diễn ra", href: "/#ongoing" },
-    { name: "Đã diễn ra", href: "/#timeline" },
+    { name: "Sắp diễn ra", href: "/su-kien#upcoming" },
+    { name: "Đang diễn ra", href: "/su-kien#ongoing" },
+    { name: "Đã diễn ra", href: "/su-kien#timeline" },
   ];
 
   return (
