@@ -11,14 +11,14 @@ export function Footer() {
               Academy for Students
             </div>
           </div>
-          
+
           <div className="flex items-center gap-6 text-sm font-medium text-slate-600">
             <span className="text-slate-500">Mạng xã hội</span>
-            <a href="#" className="hover:text-[#4285F4] transition-colors">Facebook</a>
-            <a href="#" className="hover:text-[#4285F4] transition-colors">YouTube</a>
+            <a href="https://www.facebook.com/pead22/" className="hover:text-[#4285F4] transition-colors">Facebook</a>
+            <a href="https://www.youtube.com/channel/UCM_gt0Vo2Hcx1ODE535-r6g" className="hover:text-[#4285F4] transition-colors">YouTube</a>
           </div>
         </div>
-        
+
         <div className="text-center text-xs text-slate-500 pt-6 border-t border-blue-200/50 leading-relaxed">
           Dự án cá nhân do GSA Trainer Dương Đại Sơn tự tổ chức và xây dựng.
         </div>
