@@ -24,13 +24,13 @@ export const sendAccountEmail = async (email: string, fullName: string, setPassw
   const mailOptions = {
     from: `"Gemini Academy" <${senderAddress}>`,
     to: email,
-    subject: "Chào mừng đến với Gemini Academy for Students - Kích hoạt tài khoản",
-    text: `Xin chào ${fullName},\n\nTài khoản của bạn đã được tạo thành công. Vui lòng đặt mật khẩu bằng liên kết sau: ${setPasswordLink}\n\nSau khi đặt mật khẩu, bạn có thể đăng nhập tại: ${loginUrl}\n\nNếu bạn không yêu cầu đăng ký, vui lòng bỏ qua email này.`,
+    subject: "[QUAN TRỌNG] Chào mừng đến với Gemini Academy for Students - Kích hoạt tài khoản",
+    text: `Xin chào ${fullName},\n\nCảm ơn bạn đã đăng ký tham gia chương trình Google Gemini for Student được tổ chức bởi Pea Dương - GSA Trainer tại Google. Tài khoản của bạn đã được tạo thành công.\n\nVui lòng đặt mật khẩu bằng liên kết sau: ${setPasswordLink}\n\nSau khi đặt mật khẩu, bạn có thể đăng nhập tại: ${loginUrl}\n\nBạn vui lòng tham gia nhóm lớp học trên nền tảng MS Team bằng cách truy cập vào link sau:\nhttps://teams.microsoft.com/l/team/19%3AGxBewz-UCQwSGKyhFNDv6-WOtt13x2wS17yCjen4UQY1%40thread.tacv2/conversations?groupId=120d9962-ae60-4a85-81de-783b3ca2fd5f&tenantId=60900ae5-d282-4ecb-9134-bf478d1b93c1\n\nNếu bạn không yêu cầu đăng ký, vui lòng bỏ qua email này.`,
     html: `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e2e8f0; border-radius: 10px;">
         <h2 style="color: #4285F4; text-align: center;">Gemini Academy for Students</h2>
         <p>Xin chào <strong>${fullName}</strong>,</p>
-        <p>Cảm ơn bạn đã đăng ký tham gia chương trình. Tài khoản của bạn đã được tạo thành công.</p>
+        <p>Cảm ơn bạn đã đăng ký tham gia chương trình Google Gemini for Student được tổ chức bởi Pea Dương - GSA Trainer tại Google. Tài khoản của bạn đã được tạo thành công.</p>
         <p>Vui lòng nhấn nút bên dưới để đặt mật khẩu lần đầu:</p>
         <p style="text-align: center; margin: 24px 0;">
           <a href="${setPasswordLink}" style="background-color: #4285F4; color: #ffffff; text-decoration: none; padding: 12px 20px; border-radius: 8px; display: inline-block; font-weight: 600;">Đặt mật khẩu</a>
@@ -38,6 +38,10 @@ export const sendAccountEmail = async (email: string, fullName: string, setPassw
         <p style="color: #64748b; font-size: 14px;">Nếu nút không hoạt động, bạn có thể sao chép liên kết sau:</p>
         <p style="word-break: break-all; color: #0f172a; font-size: 14px;">${setPasswordLink}</p>
         <p style="margin-top: 12px;"><strong>Trang đăng nhập:</strong> <a href="${loginUrl}">Truy cập tại đây</a></p>
+        <p style="margin-top: 24px; color: #0f172a;">Bạn vui lòng tham gia nhóm lớp học trên nền tảng MS Team bằng cách truy cập vào link sau:</p>
+        <p style="text-align: center; margin: 16px 0;">
+          <a href="https://teams.microsoft.com/l/team/19%3AGxBewz-UCQwSGKyhFNDv6-WOtt13x2wS17yCjen4UQY1%40thread.tacv2/conversations?groupId=120d9962-ae60-4a85-81de-783b3ca2fd5f&tenantId=60900ae5-d282-4ecb-9134-bf478d1b93c1" style="color: #4285F4; font-weight: bold; font-size: 16px; text-decoration: underline;">Chung | Pea - Google Academy for Students - Trainers</a>
+        </p>
         <hr style="border: 0; border-top: 1px solid #e2e8f0; margin: 20px 0;" />
         <p style="font-size: 12px; color: #94a3b8; text-align: center;">© 2026 GSA Trainers. All rights reserved.</p>
       </div>
@@ -50,12 +54,12 @@ export const sendAccountEmail = async (email: string, fullName: string, setPassw
 };
 
 export const sendWorkshopRegistrationEmail = async (
-  email: string, 
-  fullName: string, 
+  email: string,
+  fullName: string,
   workshopTitle: string,
   eventData?: { date: string, time: string, type: string, location: string, meetingLink: string }
 ) => {
-  const locationString = eventData?.type === 'Online' 
+  const locationString = eventData?.type === 'Online'
     ? `Google Meet - <strong>Link:</strong> <a href="${eventData?.meetingLink}" style="color: #4285F4; text-decoration: none;">${eventData?.meetingLink}</a>`
     : (eventData?.location || "Chưa cập nhật");
 
