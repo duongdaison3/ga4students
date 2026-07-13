@@ -18,10 +18,18 @@ export default function EventDetailsPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [user, setUser] = useState<User | null>(null);
   const [processing, setProcessing] = useState(false);
+  const [isRegistered, setIsRegistered] = useState(false);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+    const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
       setUser(currentUser);
+      if (currentUser && id) {
+        const userDoc = await getDoc(doc(db, "users", currentUser.uid));
+        if (userDoc.exists()) {
+          const registered = userDoc.data().registeredWorkshops || [];
+          setIsRegistered(registered.includes(id as string));
+        }
+      }
     });
 
     async function fetchEvent() {
@@ -78,6 +86,7 @@ export default function EventDetailsPage() {
       }
 
       alert("Đăng ký sự kiện thành công! Vui lòng kiểm tra email xác nhận của bạn.");
+      setIsRegistered(true);
     } catch (error: any) {
       alert(error.message);
     } finally {
@@ -162,7 +171,7 @@ export default function EventDetailsPage() {
             {event.mainContent && (
               <div 
                 className="prose prose-slate prose-lg max-w-none"
-                dangerouslySetInnerHTML={{ __html: event.mainContent }}
+                dangerouslySetInnerHTML={{ __html: event.mainContent.replace(/&nbsp;/g, ' ') }}
               />
             )}
           </div>
@@ -178,11 +187,11 @@ export default function EventDetailsPage() {
               {user ? (
                 <button 
                   onClick={handleRegister}
-                  disabled={processing}
-                  className={`inline-flex items-center justify-center gap-2 py-4 px-8 rounded-full font-bold text-lg transition-all ${processing ? 'bg-blue-300 text-white cursor-not-allowed' : 'bg-white text-[#4285F4] hover:bg-slate-50 hover:shadow-lg'}`}
+                  disabled={processing || isRegistered}
+                  className={`inline-flex items-center justify-center gap-2 py-4 px-8 rounded-full font-bold text-lg transition-all ${isRegistered ? 'bg-slate-100 text-slate-500 cursor-not-allowed shadow-none border border-slate-200' : processing ? 'bg-blue-300 text-white cursor-not-allowed' : 'bg-white text-[#4285F4] hover:bg-slate-50 hover:shadow-lg'}`}
                 >
-                  {processing ? 'Đang xử lý...' : 'Đăng ký giữ chỗ ngay'}
-                  {!processing && <ArrowRight className="h-5 w-5" />}
+                  {isRegistered ? 'Bạn đã đăng ký' : processing ? 'Đang xử lý...' : 'Đăng ký giữ chỗ ngay'}
+                  {!isRegistered && !processing && <ArrowRight className="h-5 w-5" />}
                 </button>
               ) : (
                 <button 

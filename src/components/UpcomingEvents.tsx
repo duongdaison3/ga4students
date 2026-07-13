@@ -12,10 +12,19 @@ export function UpcomingEvents() {
   const [events, setEvents] = useState<any[]>([]);
   const [processingId, setProcessingId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [registeredWorkshops, setRegisteredWorkshops] = useState<string[]>([]);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+    const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
       setUser(currentUser);
+      if (currentUser) {
+        const userDoc = await getDocs(query(collection(db, "users"), where("__name__", "==", currentUser.uid)));
+        if (!userDoc.empty) {
+          setRegisteredWorkshops(userDoc.docs[0].data().registeredWorkshops || []);
+        }
+      } else {
+        setRegisteredWorkshops([]);
+      }
     });
 
     async function fetchEvents() {
@@ -73,6 +82,7 @@ export function UpcomingEvents() {
       }
 
       alert("Đăng ký sự kiện thành công! Vui lòng kiểm tra email xác nhận của bạn.");
+      setRegisteredWorkshops((prev) => [...prev, eventId]);
     } catch (error: any) {
       alert(error.message);
     } finally {
@@ -162,11 +172,11 @@ export function UpcomingEvents() {
                   </Link>
                   <button 
                     onClick={() => handleRegisterEvent(event.id, event.title)}
-                    disabled={processingId === event.id}
-                    className={`flex-[1.5] flex items-center justify-center gap-2 py-3 px-4 rounded-xl font-bold text-sm transition-all ${processingId === event.id ? 'bg-slate-200 text-slate-500 cursor-not-allowed' : 'bg-gradient-to-r from-[#4285F4] to-[#3b77db] hover:from-[#3b77db] hover:to-[#2b66c7] text-white shadow-lg hover:shadow-xl'}`}
+                    disabled={processingId === event.id || registeredWorkshops.includes(event.id)}
+                    className={`flex-[1.5] flex items-center justify-center gap-2 py-3 px-4 rounded-xl font-bold text-sm transition-all ${registeredWorkshops.includes(event.id) ? 'bg-slate-100 text-slate-500 cursor-not-allowed border border-slate-200 shadow-none' : processingId === event.id ? 'bg-slate-200 text-slate-500 cursor-not-allowed' : 'bg-gradient-to-r from-[#4285F4] to-[#3b77db] hover:from-[#3b77db] hover:to-[#2b66c7] text-white shadow-lg hover:shadow-xl'}`}
                   >
-                    {processingId === event.id ? 'Đang xử lý...' : 'Đăng ký giữ chỗ'}
-                    {processingId !== event.id && <ArrowRight className="h-4 w-4" />}
+                    {registeredWorkshops.includes(event.id) ? 'Bạn đã đăng ký' : processingId === event.id ? 'Đang xử lý...' : 'Đăng ký giữ chỗ'}
+                    {!registeredWorkshops.includes(event.id) && processingId !== event.id && <ArrowRight className="h-4 w-4" />}
                   </button>
                 </div>
               ) : (
