@@ -53,7 +53,14 @@ export async function POST(req: Request) {
     });
 
     // 5. Send account activation email with password setup link
-    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
+    let baseUrl = process.env.NEXT_PUBLIC_BASE_URL;
+    if (!baseUrl) {
+      try {
+        baseUrl = new URL(req.url).origin;
+      } catch (e) {
+        baseUrl = "http://localhost:3000";
+      }
+    }
     const safeBaseUrl = baseUrl.endsWith("/") ? baseUrl.slice(0, -1) : baseUrl;
     const firebaseLink = await adminAuth.generatePasswordResetLink(email, {
       url: `${safeBaseUrl}/dang-nhap`,

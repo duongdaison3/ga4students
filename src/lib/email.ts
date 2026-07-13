@@ -20,7 +20,13 @@ const logEmailResult = (label: string, info: nodemailer.SentMessageInfo) => {
 };
 
 export const sendAccountEmail = async (email: string, fullName: string, setPasswordLink: string) => {
-  const loginUrl = `${process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000"}/dang-nhap`;
+  let loginUrl = "http://localhost:3000/dang-nhap";
+  try {
+    const urlObj = new URL(setPasswordLink);
+    loginUrl = `${urlObj.origin}/dang-nhap`;
+  } catch (e) {
+    // fallback if parsing fails
+  }
   const mailOptions = {
     from: `"Gemini Academy" <${senderAddress}>`,
     to: email,
