@@ -161,7 +161,7 @@ export default function EventDetailsPage() {
             {/* Rich Text Content */}
             {event.mainContent && (
               <div 
-                className="prose prose-slate prose-lg max-w-none"
+                className="prose prose-slate prose-lg max-w-none break-words overflow-hidden"
                 dangerouslySetInnerHTML={{ __html: event.mainContent }}
               />
             )}
