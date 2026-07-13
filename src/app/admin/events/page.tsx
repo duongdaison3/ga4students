@@ -170,7 +170,9 @@ export default function AdminEvents() {
                 <div><span className="font-medium text-slate-700">Giờ:</span> {event.time}</div>
                 <div><span className="font-medium text-slate-700">Hình thức:</span> {event.type === 'Offline' ? event.location : 'Online'}</div>
                 {event.type === 'Online' && event.meetingLink && (
-                  <div><span className="font-medium text-slate-700">Link họp:</span> {event.meetingLink}</div>
+                  <div className="truncate" title={event.meetingLink}>
+                    <span className="font-medium text-slate-700">Link họp:</span> <a href={event.meetingLink} target="_blank" rel="noopener noreferrer" className="text-[#4285F4] hover:underline">{event.meetingLink}</a>
+                  </div>
                 )}
               </div>
 

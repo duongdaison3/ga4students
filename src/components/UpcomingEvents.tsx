@@ -5,6 +5,7 @@ import { auth, db } from "@/lib/firebase";
 import { onAuthStateChanged, User } from "firebase/auth";
 import { collection, query, where, getDocs, orderBy } from "firebase/firestore";
 import { Calendar, MapPin, Clock, ArrowRight } from "lucide-react";
+import Link from "next/link";
 
 export function UpcomingEvents() {
   const [user, setUser] = useState<User | null>(null);
@@ -152,21 +153,37 @@ export function UpcomingEvents() {
                 </div>
               
               {user ? (
-                <button 
-                  onClick={() => handleRegisterEvent(event.id, event.title)}
-                  disabled={processingId === event.id}
-                  className={`w-full flex items-center justify-center gap-2 py-4 px-4 rounded-xl font-bold text-base transition-all ${processingId === event.id ? 'bg-slate-200 text-slate-500 cursor-not-allowed' : 'bg-gradient-to-r from-[#4285F4] to-[#3b77db] hover:from-[#3b77db] hover:to-[#2b66c7] text-white shadow-lg hover:shadow-xl'}`}
-                >
-                  {processingId === event.id ? 'Đang xử lý...' : 'Đăng ký giữ chỗ'}
-                  {processingId !== event.id && <ArrowRight className="h-5 w-5" />}
-                </button>
+                <div className="flex flex-col sm:flex-row gap-3">
+                  <Link 
+                    href={`/su-kien/${event.id}`}
+                    className="flex-1 flex items-center justify-center py-3 px-4 rounded-xl font-bold text-sm bg-blue-50 text-[#4285F4] hover:bg-blue-100 transition-all border border-blue-100"
+                  >
+                    Xem chi tiết
+                  </Link>
+                  <button 
+                    onClick={() => handleRegisterEvent(event.id, event.title)}
+                    disabled={processingId === event.id}
+                    className={`flex-[1.5] flex items-center justify-center gap-2 py-3 px-4 rounded-xl font-bold text-sm transition-all ${processingId === event.id ? 'bg-slate-200 text-slate-500 cursor-not-allowed' : 'bg-gradient-to-r from-[#4285F4] to-[#3b77db] hover:from-[#3b77db] hover:to-[#2b66c7] text-white shadow-lg hover:shadow-xl'}`}
+                  >
+                    {processingId === event.id ? 'Đang xử lý...' : 'Đăng ký giữ chỗ'}
+                    {processingId !== event.id && <ArrowRight className="h-4 w-4" />}
+                  </button>
+                </div>
               ) : (
-                <button 
-                  onClick={() => window.location.href = '/dang-nhap'}
-                  className="w-full flex items-center justify-center py-4 px-4 rounded-xl font-bold text-base bg-slate-100 hover:bg-slate-200 text-slate-700 transition-all border border-slate-200"
-                >
-                  Đăng nhập để đăng ký
-                </button>
+                <div className="flex flex-col sm:flex-row gap-3">
+                  <Link 
+                    href={`/su-kien/${event.id}`}
+                    className="flex-1 flex items-center justify-center py-3 px-4 rounded-xl font-bold text-sm bg-blue-50 text-[#4285F4] hover:bg-blue-100 transition-all border border-blue-100"
+                  >
+                    Xem chi tiết
+                  </Link>
+                  <button 
+                    onClick={() => window.location.href = '/dang-nhap'}
+                    className="flex-[1.5] flex items-center justify-center py-3 px-4 rounded-xl font-bold text-sm bg-slate-100 hover:bg-slate-200 text-slate-700 transition-all border border-slate-200"
+                  >
+                    Đăng nhập để ĐK
+                  </button>
+                </div>
               )}
             </div>
             ))
