@@ -55,10 +55,15 @@ export async function POST(req: Request) {
     // 5. Send account activation email with password setup link
     const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
     const safeBaseUrl = baseUrl.endsWith("/") ? baseUrl.slice(0, -1) : baseUrl;
-    const setPasswordLink = await adminAuth.generatePasswordResetLink(email, {
+    const firebaseLink = await adminAuth.generatePasswordResetLink(email, {
       url: `${safeBaseUrl}/dang-nhap`,
       handleCodeInApp: false,
     });
+    
+    // Tạo link tùy chỉnh trỏ về trang web của mình
+    const urlObj = new URL(firebaseLink);
+    const oobCode = urlObj.searchParams.get("oobCode");
+    const setPasswordLink = `${safeBaseUrl}/dat-mat-khau?oobCode=${oobCode}`;
 
     await sendAccountEmail(email, fullName, setPasswordLink);
 
