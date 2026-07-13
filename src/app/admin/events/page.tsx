@@ -20,6 +20,7 @@ export default function AdminEvents() {
   const [events, setEvents] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editEventId, setEditEventId] = useState<string | null>(null);
 
   const [formData, setFormData] = useState({
     title: "",
@@ -58,11 +59,19 @@ export default function AdminEvents() {
     e.preventDefault();
     setIsSubmitting(true);
     try {
-      await addDoc(collection(db, "events"), {
-        ...formData,
-        createdAt: new Date()
-      });
-      alert("Thêm sự kiện thành công!");
+      if (editEventId) {
+        await updateDoc(doc(db, "events", editEventId), {
+          ...formData,
+          updatedAt: new Date()
+        });
+        alert("Cập nhật sự kiện thành công!");
+      } else {
+        await addDoc(collection(db, "events"), {
+          ...formData,
+          createdAt: new Date()
+        });
+        alert("Thêm sự kiện thành công!");
+      }
       setIsModalOpen(false);
       fetchEvents();
       // Reset form
@@ -70,8 +79,9 @@ export default function AdminEvents() {
         title: "", topic: TOPICS[0], description: "", mainContent: "",
         date: "", time: "", type: "Online", location: "Google Meet", meetingLink: "", status: "opening"
       });
+      setEditEventId(null);
     } catch (error) {
-      alert("Đã xảy ra lỗi khi thêm sự kiện.");
+      alert("Đã xảy ra lỗi khi lưu sự kiện.");
     } finally {
       setIsSubmitting(false);
     }
@@ -98,12 +108,36 @@ export default function AdminEvents() {
     }
   };
 
+  const handleEdit = (event: any) => {
+    setFormData({
+      title: event.title || "",
+      topic: event.topic || TOPICS[0],
+      description: event.description || "",
+      mainContent: event.mainContent || "",
+      date: event.date || "",
+      time: event.time || "",
+      type: event.type || "Online",
+      location: event.location || "",
+      meetingLink: event.meetingLink || "",
+      status: event.status || "opening"
+    });
+    setEditEventId(event.id);
+    setIsModalOpen(true);
+  };
+
   return (
     <div>
       <div className="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4">
         <h2 className="text-2xl font-bold text-slate-800">Quản lý Sự kiện</h2>
         <button
-          onClick={() => setIsModalOpen(true)}
+          onClick={() => {
+            setFormData({
+              title: "", topic: TOPICS[0], description: "", mainContent: "",
+              date: "", time: "", type: "Online", location: "Google Meet", meetingLink: "", status: "opening"
+            });
+            setEditEventId(null);
+            setIsModalOpen(true);
+          }}
           className="flex items-center gap-2 px-4 py-2 bg-[#4285F4] text-white rounded-lg font-medium hover:bg-blue-600 transition-colors"
         >
           <Plus className="w-5 h-5" />
@@ -155,6 +189,13 @@ export default function AdminEvents() {
                   {event.status === 'opening' ? 'Đóng' : 'Mở'}
                 </button>
                 <button
+                  onClick={() => handleEdit(event)}
+                  className="px-3 py-2 bg-blue-50 hover:bg-blue-100 text-blue-600 rounded-lg transition-colors"
+                  title="Sửa sự kiện"
+                >
+                  <Edit className="w-4 h-4" />
+                </button>
+                <button
                   onClick={() => handleDelete(event.id)}
                   className="px-3 py-2 bg-red-50 hover:bg-red-100 text-red-600 rounded-lg transition-colors"
                   title="Xóa sự kiện"
@@ -172,7 +213,7 @@ export default function AdminEvents() {
         <div className="fixed inset-0 bg-slate-900/50 z-50 flex items-center justify-center p-4 overflow-y-auto">
           <div className="bg-white rounded-2xl w-full max-w-4xl max-h-[90vh] overflow-y-auto flex flex-col shadow-2xl my-8">
             <div className="flex justify-between items-center p-6 border-b border-slate-200 sticky top-0 bg-white z-10">
-              <h3 className="text-xl font-bold text-slate-900">Tạo Sự kiện mới</h3>
+              <h3 className="text-xl font-bold text-slate-900">{editEventId ? "Cập nhật Sự kiện" : "Tạo Sự kiện mới"}</h3>
               <button onClick={() => setIsModalOpen(false)} className="text-slate-400 hover:text-slate-600">
                 <X className="w-6 h-6" />
               </button>
@@ -240,7 +281,7 @@ export default function AdminEvents() {
               <div className="flex justify-end gap-3 pt-6 border-t border-slate-200 mt-8">
                 <button type="button" onClick={() => setIsModalOpen(false)} className="px-6 py-2 text-slate-700 font-medium hover:bg-slate-100 rounded-lg transition-colors">Hủy</button>
                 <button type="submit" disabled={isSubmitting} className="px-6 py-2 bg-[#4285F4] text-white font-medium rounded-lg hover:bg-blue-600 transition-colors disabled:bg-blue-300">
-                  {isSubmitting ? "Đang lưu..." : "Tạo sự kiện"}
+                  {isSubmitting ? "Đang lưu..." : (editEventId ? "Lưu thay đổi" : "Tạo sự kiện")}
                 </button>
               </div>
             </form>
