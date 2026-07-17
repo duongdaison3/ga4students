@@ -10,7 +10,8 @@ import { Users, Calendar, LayoutDashboard, LogOut, ArrowLeft } from "lucide-reac
 
 const ADMIN_EMAILS = [
   "pea44.work@gmail.com",
-  "spea22@xpea.io.vn"
+  "spea22@xpea.io.vn",
+  "vuongtonga171105@gmail.com"
 ];
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
