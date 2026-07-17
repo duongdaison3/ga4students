@@ -8,9 +8,9 @@ const ADMIN_EMAILS = [
 
 export const runtime = "nodejs";
 
-export async function DELETE(req: Request, { params }: { params: { userId: string } }) {
+export async function DELETE(req: Request, { params }: { params: Promise<{ userId: string }> }) {
   try {
-    const userIdToDelete = params.userId;
+    const { userId: userIdToDelete } = await params;
     if (!userIdToDelete) return NextResponse.json({ error: "Missing userId" }, { status: 400 });
 
     const authHeader = req.headers.get("Authorization");
