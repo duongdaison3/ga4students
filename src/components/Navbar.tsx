@@ -11,10 +11,37 @@ export function Navbar() {
   const [user, setUser] = useState<User | null>(null);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+    const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
       setUser(currentUser);
+      if (currentUser) {
+        if (currentUser.email && ["pea44.work@gmail.com", "spea22@xpea.io.vn"].includes(currentUser.email)) {
+          setIsAdmin(true);
+        } else {
+          try {
+            const userDoc = await getDoc(doc(db, "users", currentUser.uid));
+            if (userDoc.exists() && userDoc.data().role === 'admin') {
+              setIsAdmin(true);
+            } else if (currentUser.email) {
+              const q = query(collection(db, "users"), where("email", "==", currentUser.email));
+              const querySnapshot = await getDocs(q);
+              if (!querySnapshot.empty && querySnapshot.docs[0].data().role === 'admin') {
+                setIsAdmin(true);
+              } else {
+                setIsAdmin(false);
+              }
+            } else {
+              setIsAdmin(false);
+            }
+          } catch (e) {
+            setIsAdmin(false);
+          }
+        }
+      } else {
+        setIsAdmin(false);
+      }
     });
     return () => unsubscribe();
   }, []);
@@ -75,6 +102,16 @@ export function Navbar() {
 
               {isDropdownOpen && (
                 <div className="absolute right-0 mt-2 w-48 bg-white border border-slate-100 rounded-xl shadow-lg py-2 z-50">
+                  {isAdmin && (
+                    <Link
+                      href="/admin"
+                      onClick={() => setIsDropdownOpen(false)}
+                      className="flex items-center gap-2 px-4 py-2.5 text-sm font-medium text-slate-700 hover:bg-blue-50 hover:text-[#4285F4] transition-colors"
+                    >
+                      <UserIcon className="h-4 w-4" /> {/* Or LayoutDashboard, but using UserIcon from existing import */}
+                      Trang Quản trị
+                    </Link>
+                  )}
                   <Link
                     href="/doi-mat-khau"
                     onClick={() => setIsDropdownOpen(false)}
@@ -144,6 +181,15 @@ export function Navbar() {
                 </div>
                 <span>Xin chào, {user.displayName || user.email?.split('@')[0]}</span>
               </div>
+              {isAdmin && (
+                <Link
+                  href="/admin"
+                  onClick={() => setIsMobileMenuOpen(false)}
+                  className="flex items-center gap-2 text-sm font-medium text-slate-700 py-2"
+                >
+                  <UserIcon className="w-4 h-4" /> Trang Quản trị
+                </Link>
+              )}
               <Link
                 href="/doi-mat-khau"
                 onClick={() => setIsMobileMenuOpen(false)}

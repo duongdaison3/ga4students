@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { onAuthStateChanged } from "firebase/auth";
-import { doc, getDoc } from "firebase/firestore";
+import { doc, getDoc, collection, query, where, getDocs } from "firebase/firestore";
 import { auth, db } from "@/lib/firebase";
 import Link from "next/link";
 import { Users, Calendar, LayoutDashboard, LogOut, ArrowLeft } from "lucide-react";
@@ -30,9 +30,17 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             if (userDoc.exists() && userDoc.data().role === 'admin') {
               setIsAuthorized(true);
             } else {
-              router.replace("/");
+              // Fallback check by email in case of different Google UID
+              const q = query(collection(db, "users"), where("email", "==", user.email));
+              const querySnapshot = await getDocs(q);
+              if (!querySnapshot.empty && querySnapshot.docs[0].data().role === 'admin') {
+                setIsAuthorized(true);
+              } else {
+                router.replace("/");
+              }
             }
           } catch (e) {
+            console.error("Admin Auth Error:", e);
             router.replace("/");
           }
         }
