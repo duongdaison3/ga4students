@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { collection, getDocs, query, orderBy } from "firebase/firestore";
+import { collection, getDocs, query, orderBy, doc, updateDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { Search } from "lucide-react";
 
@@ -26,6 +26,16 @@ export default function AdminUsers() {
     
     fetchUsers();
   }, []);
+
+  const handleRoleChange = async (userId: string, newRole: string) => {
+    try {
+      await updateDoc(doc(db, "users", userId), { role: newRole });
+      setUsers(prev => prev.map(u => u.id === userId ? { ...u, role: newRole } : u));
+    } catch (error) {
+      console.error("Error updating role:", error);
+      alert("Lỗi khi cập nhật vai trò!");
+    }
+  };
 
   const filteredUsers = users.filter(u => 
     u.fullName?.toLowerCase().includes(searchTerm.toLowerCase()) || 
@@ -59,6 +69,7 @@ export default function AdminUsers() {
                 <th className="p-4">SĐT</th>
                 <th className="p-4">Trường ĐH / CĐ</th>
                 <th className="p-4">Ngày đăng ký</th>
+                <th className="p-4">Vai trò</th>
               </tr>
             </thead>
             <tbody>
@@ -79,6 +90,17 @@ export default function AdminUsers() {
                     <td className="p-4 text-slate-600">{user.university}</td>
                     <td className="p-4 text-slate-500 text-sm">
                       {user.createdAt?.seconds ? new Date(user.createdAt.seconds * 1000).toLocaleDateString("vi-VN") : "N/A"}
+                    </td>
+                    <td className="p-4">
+                      <select 
+                        value={user.role || 'student'}
+                        onChange={(e) => handleRoleChange(user.id, e.target.value)}
+                        className="px-2 py-1 bg-slate-50 border border-slate-200 rounded text-sm text-slate-700 focus:outline-none focus:border-[#4285F4]"
+                      >
+                        <option value="student">Sinh viên</option>
+                        <option value="speaker">Giảng viên</option>
+                        <option value="admin">Quản trị viên</option>
+                      </select>
                     </td>
                   </tr>
                 ))

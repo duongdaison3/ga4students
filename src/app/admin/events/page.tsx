@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { collection, getDocs, addDoc, deleteDoc, doc, updateDoc, query, orderBy } from "firebase/firestore";
+import { collection, getDocs, addDoc, deleteDoc, doc, updateDoc, query, orderBy, where } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { Search, Plus, Trash2, Edit, X, Eye } from "lucide-react";
 import { RichTextEditor } from "@/components/RichTextEditor";
@@ -21,6 +21,7 @@ export default function AdminEvents() {
   const [isLoading, setIsLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editEventId, setEditEventId] = useState<string | null>(null);
+  const [speakers, setSpeakers] = useState<any[]>([]);
 
   const [formData, setFormData] = useState({
     title: "",
@@ -32,14 +33,28 @@ export default function AdminEvents() {
     type: "Online",
     location: "Google Meet",
     meetingLink: "",
-    status: "opening"
+    status: "opening",
+    speakerId: "",
+    speakerName: ""
   });
 
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
     fetchEvents();
+    fetchSpeakers();
   }, []);
+
+  async function fetchSpeakers() {
+    try {
+      const q = query(collection(db, "users"), where("role", "==", "speaker"));
+      const snap = await getDocs(q);
+      const data = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      setSpeakers(data);
+    } catch (error) {
+      console.error("Error fetching speakers:", error);
+    }
+  }
 
   async function fetchEvents() {
     setIsLoading(true);
@@ -77,7 +92,8 @@ export default function AdminEvents() {
       // Reset form
       setFormData({
         title: "", topic: TOPICS[0], description: "", mainContent: "",
-        date: "", time: "", type: "Online", location: "Google Meet", meetingLink: "", status: "opening"
+        date: "", time: "", type: "Online", location: "Google Meet", meetingLink: "", status: "opening",
+        speakerId: "", speakerName: ""
       });
       setEditEventId(null);
     } catch (error) {
@@ -119,7 +135,9 @@ export default function AdminEvents() {
       type: event.type || "Online",
       location: event.location || "",
       meetingLink: event.meetingLink || "",
-      status: event.status || "opening"
+      status: event.status || "opening",
+      speakerId: event.speakerId || "",
+      speakerName: event.speakerName || ""
     });
     setEditEventId(event.id);
     setIsModalOpen(true);
@@ -133,7 +151,8 @@ export default function AdminEvents() {
           onClick={() => {
             setFormData({
               title: "", topic: TOPICS[0], description: "", mainContent: "",
-              date: "", time: "", type: "Online", location: "Google Meet", meetingLink: "", status: "opening"
+              date: "", time: "", type: "Online", location: "Google Meet", meetingLink: "", status: "opening",
+              speakerId: "", speakerName: ""
             });
             setEditEventId(null);
             setIsModalOpen(true);
@@ -266,6 +285,24 @@ export default function AdminEvents() {
                   <select value={formData.status} onChange={e => setFormData({ ...formData, status: e.target.value })} className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-[#4285F4] focus:outline-none">
                     <option value="opening">Đang mở đăng ký</option>
                     <option value="closed">Đóng đăng ký</option>
+                  </select>
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-slate-700">Giảng viên phụ trách</label>
+                  <select 
+                    value={formData.speakerId} 
+                    onChange={e => {
+                      const selectedSpeaker = speakers.find(s => s.id === e.target.value);
+                      setFormData({ 
+                        ...formData, 
+                        speakerId: e.target.value,
+                        speakerName: selectedSpeaker ? selectedSpeaker.fullName : ""
+                      });
+                    }} 
+                    className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-[#4285F4] focus:outline-none"
+                  >
+                    <option value="">-- Chọn Giảng viên --</option>
+                    {speakers.map(s => <option key={s.id} value={s.id}>{s.fullName}</option>)}
                   </select>
                 </div>
               </div>

@@ -3,7 +3,8 @@
 import { useEffect, useState } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { onAuthStateChanged } from "firebase/auth";
-import { auth } from "@/lib/firebase";
+import { doc, getDoc } from "firebase/firestore";
+import { auth, db } from "@/lib/firebase";
 import Link from "next/link";
 import { Users, Calendar, LayoutDashboard, LogOut, ArrowLeft } from "lucide-react";
 
@@ -19,9 +20,22 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      if (user && user.email && ADMIN_EMAILS.includes(user.email)) {
-        setIsAuthorized(true);
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
+      if (user && user.email) {
+        if (ADMIN_EMAILS.includes(user.email)) {
+          setIsAuthorized(true);
+        } else {
+          try {
+            const userDoc = await getDoc(doc(db, "users", user.uid));
+            if (userDoc.exists() && userDoc.data().role === 'admin') {
+              setIsAuthorized(true);
+            } else {
+              router.replace("/");
+            }
+          } catch (e) {
+            router.replace("/");
+          }
+        }
       } else {
         router.replace("/");
       }
