@@ -3,9 +3,10 @@
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
-import { auth } from "@/lib/firebase";
+import { auth, db } from "@/lib/firebase";
 import { onAuthStateChanged, signOut, User } from "firebase/auth";
 import { ChevronDown, User as UserIcon, LogOut, KeyRound, Menu, X } from "lucide-react";
+import { collection, doc, getDoc, getDocs, query, where } from "firebase/firestore";
 
 export function Navbar() {
   const [user, setUser] = useState<User | null>(null);
@@ -84,12 +85,12 @@ export function Navbar() {
             </Link>
           ))}
         </div>
-        
+
         {/* Desktop Auth */}
         <div className="hidden lg:flex items-center gap-3">
           {user ? (
             <div className="relative">
-              <button 
+              <button
                 onClick={() => setIsDropdownOpen(!isDropdownOpen)}
                 className="flex items-center gap-2 text-sm font-bold text-slate-700 hover:bg-slate-50 px-3 py-2 rounded-lg transition-colors focus:outline-none"
               >
@@ -120,7 +121,7 @@ export function Navbar() {
                     <KeyRound className="h-4 w-4" />
                     Đổi mật khẩu
                   </Link>
-                  <button 
+                  <button
                     onClick={() => {
                       handleSignOut();
                       setIsDropdownOpen(false);
@@ -135,13 +136,13 @@ export function Navbar() {
             </div>
           ) : (
             <>
-              <Link 
+              <Link
                 href="/dang-nhap"
                 className="text-[#4285F4] hover:text-blue-700 px-4 py-2 text-xs font-bold uppercase tracking-wider transition-colors hidden sm:block"
               >
                 Đăng nhập
               </Link>
-              <Link 
+              <Link
                 href="/dang-ky"
                 className="bg-[#4285F4] hover:bg-blue-600 text-white px-5 py-2 rounded text-xs font-bold uppercase tracking-wider transition-colors shadow-sm"
               >
@@ -197,7 +198,7 @@ export function Navbar() {
               >
                 <KeyRound className="w-4 h-4" /> Đổi mật khẩu
               </Link>
-              <button 
+              <button
                 onClick={() => {
                   handleSignOut();
                   setIsMobileMenuOpen(false);
@@ -209,14 +210,14 @@ export function Navbar() {
             </div>
           ) : (
             <div className="flex flex-col gap-3">
-              <Link 
+              <Link
                 href="/dang-nhap"
                 onClick={() => setIsMobileMenuOpen(false)}
                 className="w-full text-center text-[#4285F4] border border-[#4285F4] hover:bg-blue-50 py-2.5 rounded-lg text-sm font-bold uppercase transition-colors"
               >
                 Đăng nhập
               </Link>
-              <Link 
+              <Link
                 href="/dang-ky"
                 onClick={() => setIsMobileMenuOpen(false)}
                 className="w-full text-center bg-[#4285F4] hover:bg-blue-600 text-white py-2.5 rounded-lg text-sm font-bold uppercase transition-colors shadow-sm"
