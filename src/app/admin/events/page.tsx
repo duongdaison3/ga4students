@@ -47,7 +47,7 @@ export default function AdminEvents() {
 
   async function fetchSpeakers() {
     try {
-      const q = query(collection(db, "users"), where("role", "==", "speaker"));
+      const q = query(collection(db, "users"), where("role", "in", ["speaker", "admin"]));
       const snap = await getDocs(q);
       const data = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
       setSpeakers(data);
