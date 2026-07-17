@@ -8,7 +8,7 @@ import { Mail, Lock, LogIn } from "lucide-react";
 
 import { auth, db } from "@/lib/firebase";
 import { signInWithEmailAndPassword, GoogleAuthProvider, signInWithPopup } from "firebase/auth";
-import { doc, getDoc, collection, query, where, getDocs } from "firebase/firestore";
+import { doc, getDoc, collection, query, where, getDocs, setDoc } from "firebase/firestore";
 import { useRouter } from "next/navigation";
 
 export default function LoginPage() {
@@ -65,6 +65,13 @@ export default function LoginPage() {
           const querySnapshot = await getDocs(q);
           if (!querySnapshot.empty) {
             userExists = true;
+            try {
+              // Copy data to new UID doc so Firestore rules can evaluate it
+              const oldData = querySnapshot.docs[0].data();
+              await setDoc(doc(db, "users", result.user.uid), oldData, { merge: true });
+            } catch (syncError) {
+              console.error("Lỗi đồng bộ UID:", syncError);
+            }
           }
         }
       }
