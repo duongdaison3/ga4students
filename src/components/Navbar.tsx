@@ -18,7 +18,7 @@ export function Navbar() {
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
       setUser(currentUser);
       if (currentUser) {
-        if (currentUser.email && ["pea44.work@gmail.com", "spea22@xpea.io.vn"].includes(currentUser.email)) {
+        if (currentUser.email && ["pea44.work@gmail.com", "spea22@xpea.io.vn", "vuongtonga171105@gmail.com"].includes(currentUser.email)) {
           setIsAdmin(true);
         } else {
           try {
