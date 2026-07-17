@@ -115,16 +115,42 @@ export const sendPersonalizedMarketingEmail = async (
       from: `"Gemini Academy" <${senderAddress}>`,
       to: recipient.email,
       subject: subject,
-      html: `
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 24px; border: 1px solid #e2e8f0; border-radius: 12px; background-color: #ffffff; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);">
-          <h2 style="color: #4285F4; text-align: center; margin-bottom: 24px; font-size: 22px;">Gemini Academy for Students</h2>
-          <div style="color: #334155; font-size: 15px; line-height: 1.6;">
-            ${personalizedHtml}
-          </div>
-          <hr style="border: 0; border-top: 1px solid #e2e8f0; margin: 30px 0 20px 0;" />
-          <p style="font-size: 12px; color: #94a3b8; text-align: center; margin: 0;">© 2026 GSA Trainers. All rights reserved.</p>
-        </div>
-      `,
+      html: `<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+  body { font-family: Arial, Helvetica, sans-serif; background-color: #f8fafc; margin: 0; padding: 20px 0; }
+  h1, h2, h3, h4, h5, h6 { color: #4285F4; margin-top: 0; }
+  p { margin-top: 0; margin-bottom: 1em; }
+  a { color: #4285F4; text-decoration: none; }
+  .ql-align-center { text-align: center; }
+  .ql-align-right { text-align: right; }
+  .ql-align-justify { text-align: justify; }
+  .ql-size-large { font-size: 1.5em; }
+  .ql-size-huge { font-size: 2em; }
+  .ql-size-small { font-size: 0.75em; }
+</style>
+</head>
+<body>
+  <table width="100%" border="0" cellspacing="0" cellpadding="0" bgcolor="#f8fafc">
+    <tr>
+      <td align="center" style="padding: 20px;">
+        <table width="100%" max-width="600" border="0" cellspacing="0" cellpadding="0" bgcolor="#ffffff" style="max-width: 600px; border-radius: 8px; border: 1px solid #e2e8f0; overflow: hidden;">
+          <tr>
+            <td style="padding: 30px; font-family: Arial, Helvetica, sans-serif; color: #334155; font-size: 15px; line-height: 1.6;">
+              <h2 style="color: #4285F4; text-align: center; margin-bottom: 24px; font-size: 22px;">Gemini Academy for Students</h2>
+              ${personalizedHtml}
+              <hr style="border: 0; border-top: 1px solid #e2e8f0; margin: 30px 0 20px 0;" />
+              <p style="font-size: 12px; color: #94a3b8; text-align: center; margin: 0;">© 2026 GSA Trainers. All rights reserved.</p>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>`,
     };
 
     try {
