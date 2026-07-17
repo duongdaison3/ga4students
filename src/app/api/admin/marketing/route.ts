@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { adminAuth, adminDb } from "@/lib/firebase-admin";
-import { sendMarketingEmail } from "@/lib/email";
+import { sendPersonalizedMarketingEmail } from "@/lib/email";
 
 export const runtime = "nodejs";
 
@@ -40,10 +40,10 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    const { bccList, subject, htmlContent } = await req.json();
+    const { recipients, subject, htmlContent } = await req.json();
 
-    if (!bccList || !Array.isArray(bccList) || bccList.length === 0) {
-      return NextResponse.json({ error: "Thiếu danh sách người nhận (bccList)" }, { status: 400 });
+    if (!recipients || !Array.isArray(recipients) || recipients.length === 0) {
+      return NextResponse.json({ error: "Thiếu danh sách người nhận (recipients)" }, { status: 400 });
     }
 
     if (!subject) {
@@ -55,7 +55,7 @@ export async function POST(req: Request) {
     }
 
     // Gửi email
-    await sendMarketingEmail(bccList, subject, htmlContent);
+    await sendPersonalizedMarketingEmail(recipients, subject, htmlContent);
 
     return NextResponse.json({ message: "Gửi email thành công" }, { status: 200 });
   } catch (error: any) {

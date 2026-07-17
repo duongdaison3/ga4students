@@ -27,11 +27,11 @@ interface Event {
 export default function MarketingPage() {
   const [users, setUsers] = useState<User[]>([]);
   const [events, setEvents] = useState<Event[]>([]);
-  
+
   const [selectedUsers, setSelectedUsers] = useState<Set<string>>(new Set());
   const [subject, setSubject] = useState("");
   const [content, setContent] = useState("");
-  
+
   const [isLoading, setIsLoading] = useState(true);
   const [isSending, setIsSending] = useState(false);
   const [successMsg, setSuccessMsg] = useState("");
@@ -47,7 +47,7 @@ export default function MarketingPage() {
 
         const usersData = usersSnap.docs.map(doc => ({ id: doc.id, ...doc.data() } as User));
         const eventsData = eventsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() } as Event));
-        
+
         setUsers(usersData);
         setEvents(eventsData);
       } catch (error) {
@@ -81,21 +81,24 @@ export default function MarketingPage() {
   const handleTemplateSelect = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const eventId = e.target.value;
     if (!eventId) return;
-    
+
     const event = events.find(ev => ev.id === eventId);
     if (event) {
       setSubject(`[Nhắc nhở sự kiện] ${event.title}`);
-      const locationInfo = event.type === 'Online' 
-        ? `<strong>Google Meet:</strong> <a href="${event.meetingLink}">${event.meetingLink}</a>`
+      const locationInfo = event.type === 'Online'
+        ? `<strong>Microsoft Teams:</strong> <a href="${event.meetingLink}">${event.meetingLink}</a>`
         : `<strong>Địa điểm:</strong> ${event.location}`;
-        
+
       setContent(`
-        <h3 style="color: #4285F4;">Chào bạn,</h3>
+        <h3 style="color: #4285F4; margin-top: 0;">Xin chào {{name}},</h3>
         <p>Sự kiện <strong>${event.title}</strong> sắp diễn ra. Đừng quên tham gia cùng chúng mình nhé!</p>
         <div style="background-color: #f8fbff; padding: 15px; border-radius: 8px; border-left: 4px solid #4285F4; margin: 20px 0;">
           <p style="margin: 5px 0;"><strong>Thời gian:</strong> ${event.time} - ${event.date}</p>
           <p style="margin: 5px 0;">${locationInfo}</p>
         </div>
+        <p style="text-align: center; margin: 24px 0;">
+          <a href="#" style="background-color: #4285F4; color: #ffffff; text-decoration: none; padding: 12px 20px; border-radius: 8px; display: inline-block; font-weight: 600;">Xem chi tiết sự kiện</a>
+        </p>
         <p>Hẹn gặp lại bạn tại sự kiện!</p>
       `);
     }
@@ -117,7 +120,7 @@ export default function MarketingPage() {
 
     try {
       const token = await auth.currentUser?.getIdToken();
-      
+
       const res = await fetch("/api/admin/marketing", {
         method: "POST",
         headers: {
@@ -125,7 +128,9 @@ export default function MarketingPage() {
           "Authorization": `Bearer ${token}`
         },
         body: JSON.stringify({
-          bccList: Array.from(selectedUsers),
+          recipients: users
+            .filter(u => selectedUsers.has(u.email))
+            .map(u => ({ email: u.email, name: u.fullName || u.email.split('@')[0] })),
           subject,
           htmlContent: content
         })
@@ -165,10 +170,10 @@ export default function MarketingPage() {
             <Users className="w-5 h-5 text-[#4285F4]" />
             <h3>Người nhận ({selectedUsers.size}/{users.filter(u => u.email).length})</h3>
           </div>
-          
+
           <div className="mb-4 pb-4 border-b border-slate-100 flex items-center gap-2">
-            <input 
-              type="checkbox" 
+            <input
+              type="checkbox"
               id="selectAll"
               className="rounded border-slate-300 text-[#4285F4] focus:ring-[#4285F4]"
               onChange={handleSelectAll}
@@ -184,8 +189,8 @@ export default function MarketingPage() {
               if (!user.email) return null;
               return (
                 <div key={user.id} className="flex items-start gap-3">
-                  <input 
-                    type="checkbox" 
+                  <input
+                    type="checkbox"
                     id={`user-${user.id}`}
                     className="mt-1 rounded border-slate-300 text-[#4285F4] focus:ring-[#4285F4]"
                     checked={selectedUsers.has(user.email)}
@@ -204,14 +209,14 @@ export default function MarketingPage() {
         {/* Right Column: Editor */}
         <div className="lg:col-span-2 space-y-6">
           <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 space-y-5">
-            
+
             {/* Template Selector */}
             {events.length > 0 && (
               <div>
                 <label className="block text-sm font-bold text-slate-700 mb-2 flex items-center gap-2">
                   <FileText className="w-4 h-4 text-slate-400" /> Chọn Mẫu theo Sự kiện
                 </label>
-                <select 
+                <select
                   onChange={handleTemplateSelect}
                   defaultValue=""
                   className="w-full border border-slate-300 rounded-lg p-3 text-sm focus:outline-none focus:border-[#4285F4] focus:ring-1 focus:ring-[#4285F4]"
@@ -227,8 +232,8 @@ export default function MarketingPage() {
             {/* Subject */}
             <div>
               <label className="block text-sm font-bold text-slate-700 mb-2">Tiêu đề Email</label>
-              <input 
-                type="text" 
+              <input
+                type="text"
                 value={subject}
                 onChange={(e) => setSubject(e.target.value)}
                 placeholder="Nhập tiêu đề..."
@@ -238,21 +243,24 @@ export default function MarketingPage() {
 
             {/* Content */}
             <div>
-              <label className="block text-sm font-bold text-slate-700 mb-2">Nội dung</label>
-              <RichTextEditor 
+              <div className="flex items-center justify-between mb-2">
+                <label className="block text-sm font-bold text-slate-700">Nội dung</label>
+                <span className="text-xs text-slate-500 bg-slate-100 px-2 py-1 rounded">Mẹo: Nhập <strong>{`{{name}}`}</strong> để chèn tên người nhận.</span>
+              </div>
+              <RichTextEditor
                 value={content}
                 onChange={setContent}
-                placeholder="Soạn nội dung email..."
+                placeholder="Soạn nội dung email... (Ví dụ: Xin chào {{name}})"
               />
             </div>
-            
+
             {/* Status Messages */}
             {errorMsg && (
               <div className="p-3 bg-red-50 text-red-600 rounded-lg text-sm border border-red-100">
                 {errorMsg}
               </div>
             )}
-            
+
             {successMsg && (
               <div className="p-3 bg-green-50 text-green-700 rounded-lg text-sm border border-green-100 flex items-center gap-2">
                 <CheckCircle2 className="w-5 h-5" />
@@ -262,7 +270,7 @@ export default function MarketingPage() {
 
             {/* Submit Button */}
             <div className="flex justify-end pt-4">
-              <button 
+              <button
                 onClick={handleSend}
                 disabled={isSending}
                 className={`flex items-center gap-2 bg-[#4285F4] text-white px-6 py-3 rounded-xl font-bold transition-all ${isSending ? 'opacity-70 cursor-not-allowed' : 'hover:bg-blue-600 hover:shadow-md'}`}

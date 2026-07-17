@@ -102,26 +102,41 @@ export const sendWorkshopRegistrationEmail = async (
   return info;
 };
 
-export const sendMarketingEmail = async (
-  bccList: string[],
+export const sendPersonalizedMarketingEmail = async (
+  recipients: { email: string; name: string }[],
   subject: string,
   htmlContent: string
 ) => {
-  const mailOptions = {
-    from: `"Gemini Academy" <${senderAddress}>`,
-    to: senderAddress, // Gửi cho chính mình ở trường to, những người khác ở trường bcc để ẩn danh
-    bcc: bccList,
-    subject: subject,
-    html: `
-      <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 600px; margin: 0 auto; color: #334155;">
-        ${htmlContent}
-        <hr style="border: 0; border-top: 1px solid #f1f5f9; margin: 40px 0 20px 0;" />
-        <p style="font-size: 13px; color: #94a3b8; text-align: center; margin: 0;">© 2026 GSA Trainers. All rights reserved.</p>
-      </div>
-    `,
-  };
+  const promises = recipients.map(async (recipient) => {
+    // Replace {{name}} with the recipient's name
+    const personalizedHtml = htmlContent.replace(/{{name}}/g, recipient.name);
 
-  const info = await transporter.sendMail(mailOptions);
-  logEmailResult("Marketing email", info);
-  return info;
+    const mailOptions = {
+      from: `"Gemini Academy" <${senderAddress}>`,
+      to: recipient.email,
+      subject: subject,
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 24px; border: 1px solid #e2e8f0; border-radius: 12px; background-color: #ffffff; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);">
+          <h2 style="color: #4285F4; text-align: center; margin-bottom: 24px; font-size: 22px;">Gemini Academy for Students</h2>
+          <div style="color: #334155; font-size: 15px; line-height: 1.6;">
+            ${personalizedHtml}
+          </div>
+          <hr style="border: 0; border-top: 1px solid #e2e8f0; margin: 30px 0 20px 0;" />
+          <p style="font-size: 12px; color: #94a3b8; text-align: center; margin: 0;">© 2026 GSA Trainers. All rights reserved.</p>
+        </div>
+      `,
+    };
+
+    try {
+      const info = await transporter.sendMail(mailOptions);
+      return { success: true, email: recipient.email, info };
+    } catch (error) {
+      console.error(`Lỗi gửi mail cho ${recipient.email}:`, error);
+      return { success: false, email: recipient.email, error };
+    }
+  });
+
+  const results = await Promise.all(promises);
+  logEmailResult("Personalized Marketing email batch completed", { messageId: "batch", accepted: [], rejected: [], response: `${results.filter(r => r.success).length} succeeded` } as any);
+  return results;
 };
