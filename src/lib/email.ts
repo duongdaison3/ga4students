@@ -101,3 +101,27 @@ export const sendWorkshopRegistrationEmail = async (
   logEmailResult("Workshop email", info);
   return info;
 };
+
+export const sendMarketingEmail = async (
+  bccList: string[],
+  subject: string,
+  htmlContent: string
+) => {
+  const mailOptions = {
+    from: `"Gemini Academy" <${senderAddress}>`,
+    to: senderAddress, // Gửi cho chính mình ở trường to, những người khác ở trường bcc để ẩn danh
+    bcc: bccList,
+    subject: subject,
+    html: `
+      <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 600px; margin: 0 auto; color: #334155;">
+        ${htmlContent}
+        <hr style="border: 0; border-top: 1px solid #f1f5f9; margin: 40px 0 20px 0;" />
+        <p style="font-size: 13px; color: #94a3b8; text-align: center; margin: 0;">© 2026 GSA Trainers. All rights reserved.</p>
+      </div>
+    `,
+  };
+
+  const info = await transporter.sendMail(mailOptions);
+  logEmailResult("Marketing email", info);
+  return info;
+};
