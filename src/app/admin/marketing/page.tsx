@@ -42,7 +42,7 @@ export default function MarketingPage() {
       try {
         const [usersSnap, eventsSnap] = await Promise.all([
           getDocs(query(collection(db, "users"), orderBy("createdAt", "desc"))),
-          getDocs(query(collection(db, "events"), where("status", "==", "upcoming")))
+          getDocs(collection(db, "events"))
         ]);
 
         const usersData = usersSnap.docs.map(doc => ({ id: doc.id, ...doc.data() } as User));
@@ -78,7 +78,7 @@ export default function MarketingPage() {
     setSelectedUsers(newSelected);
   };
 
-  const handleTemplateSelect = (e: React.ChangeEvent<HTMLSelectElement>) => {
+  const handleTemplateSelect = async (e: React.ChangeEvent<HTMLSelectElement>) => {
     const eventId = e.target.value;
     if (!eventId) return;
 
@@ -101,6 +101,20 @@ export default function MarketingPage() {
         </p>
         <p>Hẹn gặp lại bạn tại sự kiện!</p>
       `);
+
+      try {
+        const regsSnap = await getDocs(query(collection(db, "registrations"), where("eventId", "==", eventId)));
+        const registeredEmails = new Set<string>();
+        regsSnap.forEach(doc => {
+          const data = doc.data();
+          if (data.userEmail) {
+            registeredEmails.add(data.userEmail);
+          }
+        });
+        setSelectedUsers(registeredEmails);
+      } catch (error) {
+        console.error("Error fetching registrations:", error);
+      }
     }
   };
 
