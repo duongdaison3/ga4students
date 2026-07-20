@@ -14,6 +14,8 @@ interface User {
 }
 
 interface Event {
+  recordLink: any;
+  slideLink: any;
   id: string;
   title: string;
   date: string;
@@ -31,6 +33,8 @@ export default function MarketingPage() {
   const [selectedUsers, setSelectedUsers] = useState<Set<string>>(new Set());
   const [subject, setSubject] = useState("");
   const [content, setContent] = useState("");
+  const [templateType, setTemplateType] = useState<"reminder" | "thankyou">("reminder");
+  const [customEmails, setCustomEmails] = useState("");
 
   const [isLoading, setIsLoading] = useState(true);
   const [isSending, setIsSending] = useState(false);
@@ -84,23 +88,43 @@ export default function MarketingPage() {
 
     const event = events.find(ev => ev.id === eventId);
     if (event) {
-      setSubject(`[Nhắc nhở sự kiện] ${event.title}`);
-      const locationInfo = event.type === 'Online'
-        ? `<strong>Microsoft Teams:</strong> <a href="${event.meetingLink}">${event.meetingLink}</a>`
-        : `<strong>Địa điểm:</strong> ${event.location}`;
+      if (templateType === "reminder") {
+        setSubject(`[Nhắc nhở sự kiện] ${event.title}`);
+        const locationInfo = event.type === 'Online'
+          ? `<strong>Microsoft Teams:</strong> <a href="${event.meetingLink}">${event.meetingLink}</a>`
+          : `<strong>Địa điểm:</strong> ${event.location}`;
 
-      setContent(`
-        <h3 style="color: #4285F4; margin-top: 0;">Xin chào {{name}},</h3>
-        <p>Sự kiện <strong>${event.title}</strong> sắp diễn ra. Đừng quên tham gia cùng chúng mình nhé!</p>
-        <div style="background-color: #f8fbff; padding: 15px; border-radius: 8px; border-left: 4px solid #4285F4; margin: 20px 0;">
-          <p style="margin: 5px 0;"><strong>Thời gian:</strong> ${event.time} - ${event.date}</p>
-          <p style="margin: 5px 0;">${locationInfo}</p>
-        </div>
-        <p style="text-align: center; margin: 24px 0;">
-          <a href="#" style="background-color: #4285F4; color: #ffffff; text-decoration: none; padding: 12px 20px; border-radius: 8px; display: inline-block; font-weight: 600;">Xem chi tiết sự kiện</a>
-        </p>
-        <p>Hẹn gặp lại bạn tại sự kiện!</p>
-      `);
+        setContent(`
+          <h3 style="color: #4285F4; margin-top: 0;">Xin chào {{name}},</h3>
+          <p>Sự kiện <strong>${event.title}</strong> sắp diễn ra. Đừng quên tham gia cùng chúng mình nhé!</p>
+          <div style="background-color: #f8fbff; padding: 15px; border-radius: 8px; border-left: 4px solid #4285F4; margin: 20px 0;">
+            <p style="margin: 5px 0;"><strong>Thời gian:</strong> ${event.time} - ${event.date}</p>
+            <p style="margin: 5px 0;">${locationInfo}</p>
+          </div>
+          <p style="text-align: center; margin: 24px 0;">
+            <a href="#" style="background-color: #4285F4; color: #ffffff; text-decoration: none; padding: 12px 20px; border-radius: 8px; display: inline-block; font-weight: 600;">Xem chi tiết sự kiện</a>
+          </p>
+          <p>Hẹn gặp lại bạn tại sự kiện!</p>
+        `);
+      } else {
+        setSubject(`[Thư cảm ơn] Cảm ơn bạn đã tham gia ${event.title}`);
+        setContent(`
+          <h3 style="color: #4285F4; margin-top: 0;">Xin chào {{name}},</h3>
+          <p>Đầu tiên, mình muốn gửi lời cảm ơn chân thành nhất đến tất cả các bạn vì đã dành thời gian tham gia buổi workshop <strong>${event.title}</strong> vừa qua.</p>
+          <p>Hy vọng rằng sau buổi chia sẻ, các bạn đã bỏ túi được những kiến thức bổ ích và áp dụng ngay vào quá trình học tập.</p>
+          <p>Để giúp các bạn dễ dàng ôn lại kiến thức, mình xin gửi lại toàn bộ tài nguyên của buổi workshop:</p>
+          <div style="background-color: #f8fbff; padding: 15px; border-radius: 8px; border-left: 4px solid #4285F4; margin: 20px 0;">
+            <p style="margin: 5px 0;"><strong>📚 Tài liệu & Bản ghi hình:</strong></p>
+            <ul style="margin: 5px 0; padding-left: 20px;">
+              ${event.slideLink ? `<li><strong>Slide bài giảng:</strong> <a href="${event.slideLink}">Xem tại đây</a></li>` : ''}
+              ${event.recordLink ? `<li><strong>Video Record:</strong> <a href="${event.recordLink}">Xem tại đây</a></li>` : ''}
+              ${!event.slideLink && !event.recordLink ? '<li>Đang cập nhật tài liệu...</li>' : ''}
+            </ul>
+          </div>
+          <p>Nếu có bất kỳ thắc mắc nào, bạn cứ thoải mái reply lại email này để mình hỗ trợ nhé.</p>
+          <p>Chúc các bạn một tuần học tập và làm việc hiệu quả!</p>
+        `);
+      }
 
       try {
         const regsSnap = await getDocs(query(collection(db, "registrations"), where("eventId", "==", eventId)));
@@ -119,8 +143,23 @@ export default function MarketingPage() {
   };
 
   const handleSend = async () => {
-    if (selectedUsers.size === 0) {
-      setErrorMsg("Vui lòng chọn ít nhất 1 người nhận.");
+    const parsedCustomEmails = customEmails
+      .split(/[\n,]/)
+      .map(e => e.trim())
+      .filter(e => e.match(/^[^\s@]+@[^\s@]+\.[^\s@]+$/));
+
+    const allRecipients = users
+      .filter(u => selectedUsers.has(u.email))
+      .map(u => ({ email: u.email, name: u.fullName || u.email.split('@')[0] }));
+
+    parsedCustomEmails.forEach(email => {
+      if (!allRecipients.find(r => r.email === email)) {
+        allRecipients.push({ email, name: email.split('@')[0] });
+      }
+    });
+
+    if (allRecipients.length === 0) {
+      setErrorMsg("Vui lòng chọn hoặc nhập ít nhất 1 người nhận hợp lệ.");
       return;
     }
     if (!subject.trim() || !content.trim()) {
@@ -142,9 +181,7 @@ export default function MarketingPage() {
           "Authorization": `Bearer ${token}`
         },
         body: JSON.stringify({
-          recipients: users
-            .filter(u => selectedUsers.has(u.email))
-            .map(u => ({ email: u.email, name: u.fullName || u.email.split('@')[0] })),
+          recipients: allRecipients,
           subject,
           htmlContent: content
         })
@@ -218,6 +255,20 @@ export default function MarketingPage() {
               );
             })}
           </div>
+
+          <div className="mt-4 pt-4 border-t border-slate-100">
+            <label className="block text-sm font-bold text-slate-700 mb-2">
+              Thêm Email ngoài hệ thống
+            </label>
+            <textarea
+              className="w-full border border-slate-300 rounded-lg p-2 text-sm focus:outline-none focus:border-[#4285F4] focus:ring-1 focus:ring-[#4285F4]"
+              rows={3}
+              placeholder="Nhập email (ngăn cách bằng dấu phẩy hoặc xuống dòng)..."
+              value={customEmails}
+              onChange={e => setCustomEmails(e.target.value)}
+            />
+            <p className="text-xs text-slate-500 mt-1">Thích hợp dùng cho người tham gia không đăng ký qua form.</p>
+          </div>
         </div>
 
         {/* Right Column: Editor */}
@@ -226,20 +277,35 @@ export default function MarketingPage() {
 
             {/* Template Selector */}
             {events.length > 0 && (
-              <div>
-                <label className="block text-sm font-bold text-slate-700 mb-2 flex items-center gap-2">
-                  <FileText className="w-4 h-4 text-slate-400" /> Chọn Mẫu theo Sự kiện
-                </label>
-                <select
-                  onChange={handleTemplateSelect}
-                  defaultValue=""
-                  className="w-full border border-slate-300 rounded-lg p-3 text-sm focus:outline-none focus:border-[#4285F4] focus:ring-1 focus:ring-[#4285F4]"
-                >
-                  <option value="" disabled>-- Chọn sự kiện đang mở để điền mẫu --</option>
-                  {events.map(ev => (
-                    <option key={ev.id} value={ev.id}>{ev.title} ({ev.date})</option>
-                  ))}
-                </select>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-bold text-slate-700 mb-2 flex items-center gap-2">
+                    <FileText className="w-4 h-4 text-slate-400" /> Loại Mẫu
+                  </label>
+                  <select
+                    value={templateType}
+                    onChange={(e) => setTemplateType(e.target.value as any)}
+                    className="w-full border border-slate-300 rounded-lg p-3 text-sm focus:outline-none focus:border-[#4285F4] focus:ring-1 focus:ring-[#4285F4]"
+                  >
+                    <option value="reminder">Nhắc nhở tham gia (Sắp diễn ra)</option>
+                    <option value="thankyou">Thư cảm ơn (Đã kết thúc)</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-bold text-slate-700 mb-2 flex items-center gap-2">
+                    Chọn Sự kiện để điền mẫu
+                  </label>
+                  <select
+                    onChange={handleTemplateSelect}
+                    defaultValue=""
+                    className="w-full border border-slate-300 rounded-lg p-3 text-sm focus:outline-none focus:border-[#4285F4] focus:ring-1 focus:ring-[#4285F4]"
+                  >
+                    <option value="" disabled>-- Chọn sự kiện --</option>
+                    {events.map(ev => (
+                      <option key={ev.id} value={ev.id}>{ev.title} ({ev.date})</option>
+                    ))}
+                  </select>
+                </div>
               </div>
             )}
 
