@@ -5,6 +5,7 @@ import { collection, getDocs, addDoc, deleteDoc, doc, updateDoc, query, orderBy,
 import { db } from "@/lib/firebase";
 import { Search, Plus, Trash2, Edit, X, Eye } from "lucide-react";
 import { RichTextEditor } from "@/components/RichTextEditor";
+import { getEventStatus } from "@/lib/utils";
 import Link from "next/link";
 
 const TOPICS = [
@@ -33,9 +34,11 @@ export default function AdminEvents() {
     type: "Online",
     location: "Google Meet",
     meetingLink: "",
-    status: "opening",
+    status: "opening", // fallback for older code, can be ignored
     speakerId: "",
-    speakerName: ""
+    speakerName: "",
+    slideLink: "",
+    recordLink: ""
   });
 
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -93,7 +96,7 @@ export default function AdminEvents() {
       setFormData({
         title: "", topic: TOPICS[0], description: "", mainContent: "",
         date: "", time: "", type: "Online", location: "Google Meet", meetingLink: "", status: "opening",
-        speakerId: "", speakerName: ""
+        speakerId: "", speakerName: "", slideLink: "", recordLink: ""
       });
       setEditEventId(null);
     } catch (error) {
@@ -115,13 +118,8 @@ export default function AdminEvents() {
   };
 
   const handleToggleStatus = async (id: string, currentStatus: string) => {
-    const newStatus = currentStatus === "opening" ? "closed" : "opening";
-    try {
-      await updateDoc(doc(db, "events", id), { status: newStatus });
-      fetchEvents();
-    } catch (error) {
-      alert("Lỗi khi cập nhật trạng thái");
-    }
+    // Feature disabled: Status is now automatically calculated based on date/time.
+    alert("Trạng thái hiện tại được hệ thống tính tự động dựa trên Ngày và Giờ tổ chức.");
   };
 
   const handleEdit = (event: any) => {
@@ -137,7 +135,9 @@ export default function AdminEvents() {
       meetingLink: event.meetingLink || "",
       status: event.status || "opening",
       speakerId: event.speakerId || "",
-      speakerName: event.speakerName || ""
+      speakerName: event.speakerName || "",
+      slideLink: event.slideLink || "",
+      recordLink: event.recordLink || ""
     });
     setEditEventId(event.id);
     setIsModalOpen(true);
@@ -152,7 +152,7 @@ export default function AdminEvents() {
             setFormData({
               title: "", topic: TOPICS[0], description: "", mainContent: "",
               date: "", time: "", type: "Online", location: "Google Meet", meetingLink: "", status: "opening",
-              speakerId: "", speakerName: ""
+              speakerId: "", speakerName: "", slideLink: "", recordLink: ""
             });
             setEditEventId(null);
             setIsModalOpen(true);
@@ -176,9 +176,20 @@ export default function AdminEvents() {
                 <span className="text-xs font-bold px-3 py-1 bg-blue-100 text-[#4285F4] rounded-full uppercase">
                   {event.topic}
                 </span>
-                <span className={`text-xs font-bold px-3 py-1 rounded-full uppercase ${event.status === 'opening' ? 'bg-green-100 text-green-700' : 'bg-slate-100 text-slate-600'}`}>
-                  {event.status === 'opening' ? 'Đang mở' : 'Đã đóng'}
-                </span>
+                {(() => {
+                  const status = getEventStatus(event.date, event.time);
+                  let statusBg = "bg-slate-100 text-slate-600";
+                  let statusText = "Không xác định";
+                  if (status === 'upcoming') { statusBg = "bg-green-100 text-green-700"; statusText = "Sắp diễn ra"; }
+                  else if (status === 'ongoing') { statusBg = "bg-blue-100 text-[#4285F4] animate-pulse"; statusText = "Đang diễn ra"; }
+                  else if (status === 'past') { statusBg = "bg-slate-200 text-slate-700"; statusText = "Đã kết thúc"; }
+                  
+                  return (
+                    <span className={`text-xs font-bold px-3 py-1 rounded-full uppercase ${statusBg}`}>
+                      {statusText}
+                    </span>
+                  );
+                })()}
               </div>
 
               <h3 className="text-lg font-bold text-slate-900 mb-2 line-clamp-2">{event.title}</h3>
@@ -202,13 +213,6 @@ export default function AdminEvents() {
                 >
                   <Eye className="w-4 h-4" /> Danh sách ĐK
                 </Link>
-                <button
-                  onClick={() => handleToggleStatus(event.id, event.status)}
-                  className="px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg transition-colors text-sm font-semibold"
-                  title={event.status === 'opening' ? 'Đóng đăng ký' : 'Mở đăng ký'}
-                >
-                  {event.status === 'opening' ? 'Đóng' : 'Mở'}
-                </button>
                 <button
                   onClick={() => handleEdit(event)}
                   className="px-3 py-2 bg-blue-50 hover:bg-blue-100 text-blue-600 rounded-lg transition-colors"
@@ -281,11 +285,12 @@ export default function AdminEvents() {
                   </div>
                 )}
                 <div className="space-y-2">
-                  <label className="text-sm font-medium text-slate-700">Trạng thái ban đầu</label>
-                  <select value={formData.status} onChange={e => setFormData({ ...formData, status: e.target.value })} className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-[#4285F4] focus:outline-none">
-                    <option value="opening">Đang mở đăng ký</option>
-                    <option value="closed">Đóng đăng ký</option>
-                  </select>
+                  <label className="text-sm font-medium text-slate-700">Link Bài giảng (Slide)</label>
+                  <input type="text" placeholder="URL Google Drive/Slide..." value={formData.slideLink} onChange={e => setFormData({ ...formData, slideLink: e.target.value })} className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-[#4285F4] focus:outline-none" />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-slate-700">Link Record (Video)</label>
+                  <input type="text" placeholder="URL YouTube/Drive..." value={formData.recordLink} onChange={e => setFormData({ ...formData, recordLink: e.target.value })} className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-[#4285F4] focus:outline-none" />
                 </div>
                 <div className="space-y-2">
                   <label className="text-sm font-medium text-slate-700">Giảng viên phụ trách</label>

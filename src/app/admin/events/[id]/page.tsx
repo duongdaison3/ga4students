@@ -4,7 +4,8 @@ import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { collection, doc, getDoc, getDocs, query, where, orderBy } from "firebase/firestore";
 import { db } from "@/lib/firebase";
-import { ArrowLeft, Users, Download } from "lucide-react";
+import { ArrowLeft, Users, Download, FileText, Video } from "lucide-react";
+import { getEventStatus } from "@/lib/utils";
 import Link from "next/link";
 
 export default function EventDetails() {
@@ -91,11 +92,30 @@ export default function EventDetails() {
           <div><span className="font-semibold text-slate-800">Tại:</span> {event.location}</div>
           <div>
             <span className="font-semibold text-slate-800">Trạng thái: </span> 
-            <span className={event.status === 'opening' ? 'text-green-600 font-bold' : 'text-slate-500 font-bold'}>
-              {event.status === 'opening' ? 'Đang mở' : 'Đã đóng'}
-            </span>
+            {(() => {
+              const status = getEventStatus(event.date, event.time);
+              if (status === 'upcoming') return <span className="text-green-600 font-bold">Sắp diễn ra</span>;
+              if (status === 'ongoing') return <span className="text-[#4285F4] font-bold animate-pulse">Đang diễn ra</span>;
+              if (status === 'past') return <span className="text-slate-500 font-bold">Đã kết thúc</span>;
+              return <span className="text-slate-500 font-bold">Không xác định</span>;
+            })()}
           </div>
         </div>
+        
+        {(event.slideLink || event.recordLink) && (
+          <div className="mt-6 pt-6 border-t border-slate-100 flex flex-wrap gap-4">
+            {event.slideLink && (
+              <a href={event.slideLink} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 px-4 py-2 bg-amber-50 text-amber-700 hover:bg-amber-100 rounded-lg text-sm font-semibold transition-colors border border-amber-100">
+                <FileText className="w-4 h-4" /> Link Bài giảng (Slide)
+              </a>
+            )}
+            {event.recordLink && (
+              <a href={event.recordLink} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 px-4 py-2 bg-purple-50 text-purple-700 hover:bg-purple-100 rounded-lg text-sm font-semibold transition-colors border border-purple-100">
+                <Video className="w-4 h-4" /> Link Video (Record)
+              </a>
+            )}
+          </div>
+        )}
       </div>
 
       <div className="flex flex-col md:flex-row md:items-center justify-between mb-6 gap-4">
