@@ -66,7 +66,7 @@ export const sendWorkshopRegistrationEmail = async (
   eventData?: { date: string, time: string, type: string, location: string, meetingLink: string }
 ) => {
   const locationString = eventData?.type === 'Online'
-    ? `Google Meet - <strong>Link:</strong> <a href="${eventData?.meetingLink}" style="color: #4285F4; text-decoration: none;">${eventData?.meetingLink}</a>`
+    ? `Microsoft Teams - <strong>Link:</strong> <a href="${eventData?.meetingLink}" style="color: #4285F4; text-decoration: none;">${eventData?.meetingLink}</a>`
     : (eventData?.location || "Chưa cập nhật");
 
   const mailOptions = {
