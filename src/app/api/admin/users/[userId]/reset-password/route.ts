@@ -6,7 +6,7 @@ export const runtime = "nodejs";
 
 export async function POST(
   req: Request,
-  { params }: { params: { userId: string } }
+  { params }: { params: Promise<{ userId: string }> }
 ) {
   try {
     const authHeader = req.headers.get("Authorization");
@@ -23,7 +23,7 @@ export async function POST(
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    const { userId } = params;
+    const { userId } = await params;
 
     // Lấy thông tin user
     const userRecord = await adminAuth.getUser(userId);

@@ -5,7 +5,7 @@ export const runtime = "nodejs";
 
 export async function POST(
   req: Request,
-  { params }: { params: { userId: string } }
+  { params }: { params: Promise<{ userId: string }> }
 ) {
   try {
     const authHeader = req.headers.get("Authorization");
@@ -22,7 +22,7 @@ export async function POST(
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    const { userId } = params;
+    const { userId } = await params;
     const body = await req.json();
     const { fullName, email, phone, university } = body;
 
