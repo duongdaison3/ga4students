@@ -23,6 +23,7 @@ export default function RootLayout({
       <head />
       <body className="min-h-screen flex flex-col bg-white text-slate-800">
         {children}
+        <Analytics />
       </body>
     </html>
   );
