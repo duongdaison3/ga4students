@@ -6,7 +6,7 @@ import { onAuthStateChanged } from "firebase/auth";
 import { doc, getDoc, collection, query, where, getDocs } from "firebase/firestore";
 import { auth, db } from "@/lib/firebase";
 import Link from "next/link";
-import { Users, Calendar, LayoutDashboard, LogOut, ArrowLeft, Mail } from "lucide-react";
+import { Users, Calendar, LayoutDashboard, LogOut, ArrowLeft, Mail, Menu, ChevronLeft } from "lucide-react";
 
 const ADMIN_EMAILS = [
   "pea44.work@gmail.com",
@@ -19,6 +19,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const pathname = usePathname();
   const [isAuthorized, setIsAuthorized] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
@@ -74,15 +75,37 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   ];
 
   return (
-    <div className="flex h-screen bg-slate-100">
+    <div className="flex h-screen bg-slate-100 overflow-hidden">
       {/* Sidebar */}
-      <aside className="w-64 bg-white border-r border-slate-200 flex flex-col">
-        <div className="p-6 border-b border-slate-200">
-          <Link href="/" className="flex items-center gap-2 text-slate-600 hover:text-[#4285F4] transition-colors mb-6 text-sm font-medium">
-            <ArrowLeft className="w-4 h-4" /> Về trang chủ
-          </Link>
-          <h1 className="text-xl font-extrabold text-slate-900 tracking-tight">
-            GA4Students <span className="text-[#4285F4]">Admin</span>
+      <aside 
+        className={`${
+          isSidebarOpen ? "w-64" : "w-20"
+        } bg-white border-r border-slate-200 flex flex-col transition-all duration-300 relative`}
+      >
+        <button
+          onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+          className="absolute -right-3 top-6 bg-white border border-slate-200 rounded-full p-1 text-slate-400 hover:text-[#4285F4] shadow-sm z-10"
+        >
+          {isSidebarOpen ? <ChevronLeft className="w-4 h-4" /> : <Menu className="w-4 h-4" />}
+        </button>
+
+        <div className={`p-6 border-b border-slate-200 ${!isSidebarOpen && "px-4 items-center flex flex-col"}`}>
+          {isSidebarOpen ? (
+            <Link href="/" className="flex items-center gap-2 text-slate-600 hover:text-[#4285F4] transition-colors mb-6 text-sm font-medium">
+              <ArrowLeft className="w-4 h-4" /> Về trang chủ
+            </Link>
+          ) : (
+            <Link href="/" className="text-slate-600 hover:text-[#4285F4] transition-colors mb-6" title="Về trang chủ">
+              <ArrowLeft className="w-5 h-5" />
+            </Link>
+          )}
+          
+          <h1 className={`font-extrabold text-slate-900 tracking-tight transition-all ${isSidebarOpen ? "text-xl" : "text-xs text-center"}`}>
+            {isSidebarOpen ? (
+              <>GA4Students <span className="text-[#4285F4]">Admin</span></>
+            ) : (
+              <span className="text-[#4285F4]">Admin</span>
+            )}
           </h1>
         </div>
         
@@ -94,14 +117,17 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
               <Link
                 key={item.href}
                 href={item.href}
-                className={`flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all ${
+                title={!isSidebarOpen ? item.name : undefined}
+                className={`flex items-center gap-3 py-3 rounded-xl text-sm font-medium transition-all ${
+                  isSidebarOpen ? "px-4" : "justify-center"
+                } ${
                   isActive 
                     ? "bg-blue-50 text-[#4285F4]" 
                     : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
                 }`}
               >
                 <Icon className={`w-5 h-5 ${isActive ? "text-[#4285F4]" : "text-slate-400"}`} />
-                {item.name}
+                {isSidebarOpen && item.name}
               </Link>
             );
           })}
@@ -110,10 +136,13 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         <div className="p-4 border-t border-slate-200">
           <button 
             onClick={() => auth.signOut()}
-            className="flex items-center gap-3 px-4 py-3 w-full rounded-xl text-sm font-medium text-red-600 hover:bg-red-50 transition-all"
+            title={!isSidebarOpen ? "Đăng xuất" : undefined}
+            className={`flex items-center gap-3 py-3 w-full rounded-xl text-sm font-medium text-red-600 hover:bg-red-50 transition-all ${
+              isSidebarOpen ? "px-4" : "justify-center"
+            }`}
           >
             <LogOut className="w-5 h-5 text-red-500" />
-            Đăng xuất
+            {isSidebarOpen && "Đăng xuất"}
           </button>
         </div>
       </aside>

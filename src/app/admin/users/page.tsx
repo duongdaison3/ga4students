@@ -237,13 +237,13 @@ export default function AdminUsers() {
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="bg-slate-50 border-b border-slate-200 text-sm font-semibold text-slate-600">
-                <th className="p-4">Họ và Tên</th>
-                <th className="p-4">Email</th>
-                <th className="p-4">SĐT</th>
-                <th className="p-4">Trường ĐH / CĐ</th>
-                <th className="p-4">Ngày đăng ký</th>
-                <th className="p-4">Vai trò</th>
-                <th className="p-4 text-center">Hành động</th>
+                <th className="p-4 whitespace-nowrap">Họ và Tên</th>
+                <th className="p-4 whitespace-nowrap">Email</th>
+                <th className="p-4 whitespace-nowrap">SĐT</th>
+                <th className="p-4 min-w-[200px]">Trường ĐH / CĐ</th>
+                <th className="p-4 whitespace-nowrap">Ngày đăng ký</th>
+                <th className="p-4 whitespace-nowrap">Vai trò</th>
+                <th className="p-4 text-center whitespace-nowrap">Hành động</th>
               </tr>
             </thead>
             <tbody>
@@ -258,11 +258,15 @@ export default function AdminUsers() {
               ) : (
                 filteredUsers.map((user, idx) => (
                   <tr key={user.id} className="border-b border-slate-100 hover:bg-slate-50">
-                    <td className="p-4 font-medium text-slate-900">{user.fullName}</td>
-                    <td className="p-4 text-slate-600">{user.email}</td>
-                    <td className="p-4 text-slate-600">{user.phone}</td>
-                    <td className="p-4 text-slate-600">{user.university}</td>
-                    <td className="p-4 text-slate-500 text-sm">
+                    <td className="p-4 font-medium text-slate-900 whitespace-nowrap">{user.fullName}</td>
+                    <td className="p-4 text-slate-600 whitespace-nowrap">{user.email}</td>
+                    <td className="p-4 text-slate-600 whitespace-nowrap">{user.phone}</td>
+                    <td className="p-4 text-slate-600">
+                      <div className="max-w-[200px] sm:max-w-[250px] truncate" title={user.university}>
+                        {user.university}
+                      </div>
+                    </td>
+                    <td className="p-4 text-slate-500 text-sm whitespace-nowrap">
                       {user.createdAt?.seconds ? new Date(user.createdAt.seconds * 1000).toLocaleDateString("vi-VN") : "N/A"}
                     </td>
                     <td className="p-4">
