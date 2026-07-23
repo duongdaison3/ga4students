@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { collection, getDocs, query, orderBy, doc, updateDoc } from "firebase/firestore";
 import { db, auth } from "@/lib/firebase";
-import { Search, Trash2, Download } from "lucide-react";
+import { Search, Trash2, Download, Edit, Key, X } from "lucide-react";
 
 export default function AdminUsers() {
   const [users, setUsers] = useState<any[]>([]);
@@ -11,6 +11,15 @@ export default function AdminUsers() {
   const [searchTerm, setSearchTerm] = useState("");
   const [roleFilter, setRoleFilter] = useState("all");
   const [isDeleting, setIsDeleting] = useState<string | null>(null);
+
+  // Edit User State
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [editingUser, setEditingUser] = useState<any>(null);
+  const [editForm, setEditForm] = useState({ fullName: "", email: "", phone: "", university: "" });
+  const [isSubmittingEdit, setIsSubmittingEdit] = useState(false);
+
+  // Password Reset State
+  const [isResetting, setIsResetting] = useState<string | null>(null);
 
   useEffect(() => {
     fetchUsers();
@@ -103,6 +112,76 @@ export default function AdminUsers() {
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+  };
+
+  const handleEditUser = (user: any) => {
+    setEditingUser(user);
+    setEditForm({
+      fullName: user.fullName || "",
+      email: user.email || "",
+      phone: user.phone || "",
+      university: user.university || ""
+    });
+    setIsEditModalOpen(true);
+  };
+
+  const submitEditUser = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingUser) return;
+    setIsSubmittingEdit(true);
+    
+    try {
+      const currentUser = auth.currentUser;
+      if (!currentUser) throw new Error("Chưa đăng nhập");
+      const idToken = await currentUser.getIdToken();
+
+      const res = await fetch(`/api/admin/users/${editingUser.id}/update`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${idToken}`
+        },
+        body: JSON.stringify(editForm)
+      });
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Lỗi cập nhật");
+
+      setUsers(prev => prev.map(u => u.id === editingUser.id ? { ...u, ...editForm } : u));
+      alert("Cập nhật thông tin thành công!");
+      setIsEditModalOpen(false);
+    } catch (error: any) {
+      alert(error.message || "Lỗi khi cập nhật");
+    } finally {
+      setIsSubmittingEdit(false);
+    }
+  };
+
+  const handleResetPassword = async (user: any) => {
+    if (!confirm(`Bạn có chắc muốn gửi email đặt lại mật khẩu cho ${user.email}?`)) return;
+    
+    setIsResetting(user.id);
+    try {
+      const currentUser = auth.currentUser;
+      if (!currentUser) throw new Error("Chưa đăng nhập");
+      const idToken = await currentUser.getIdToken();
+
+      const res = await fetch(`/api/admin/users/${user.id}/reset-password`, {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${idToken}`
+        }
+      });
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Lỗi cấp lại mật khẩu");
+
+      alert("Đã gửi email cấp lại mật khẩu thành công!");
+    } catch (error: any) {
+      alert(error.message || "Lỗi khi gửi email mật khẩu");
+    } finally {
+      setIsResetting(null);
+    }
   };
 
   const filteredUsers = users.filter(u => {
@@ -198,14 +277,31 @@ export default function AdminUsers() {
                       </select>
                     </td>
                     <td className="p-4 text-center">
-                      <button
-                        onClick={() => handleDeleteUser(user.id)}
-                        disabled={isDeleting === user.id}
-                        className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-50"
-                        title="Xóa người dùng"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
+                      <div className="flex items-center justify-center gap-1">
+                        <button
+                          onClick={() => handleResetPassword(user)}
+                          disabled={isResetting === user.id}
+                          className="p-2 text-amber-500 hover:bg-amber-50 rounded-lg transition-colors disabled:opacity-50"
+                          title="Gửi lại Email đặt Mật khẩu"
+                        >
+                          <Key className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={() => handleEditUser(user)}
+                          className="p-2 text-blue-500 hover:bg-blue-50 rounded-lg transition-colors"
+                          title="Sửa thông tin"
+                        >
+                          <Edit className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={() => handleDeleteUser(user.id)}
+                          disabled={isDeleting === user.id}
+                          className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-50"
+                          title="Xóa người dùng"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))
@@ -214,6 +310,46 @@ export default function AdminUsers() {
           </table>
         </div>
       </div>
+
+      {/* Edit User Modal */}
+      {isEditModalOpen && editingUser && (
+        <div className="fixed inset-0 bg-slate-900/50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl w-full max-w-md shadow-2xl overflow-hidden">
+            <div className="flex justify-between items-center p-6 border-b border-slate-200 bg-slate-50">
+              <h3 className="text-xl font-bold text-slate-900">Sửa thông tin Người dùng</h3>
+              <button onClick={() => setIsEditModalOpen(false)} className="text-slate-400 hover:text-slate-600">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            
+            <form onSubmit={submitEditUser} className="p-6 space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Họ và Tên</label>
+                <input required type="text" value={editForm.fullName} onChange={e => setEditForm({...editForm, fullName: e.target.value})} className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-[#4285F4] focus:outline-none" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Email <span className="text-red-500 text-xs">(Cẩn thận khi đổi)</span></label>
+                <input required type="email" value={editForm.email} onChange={e => setEditForm({...editForm, email: e.target.value})} className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-[#4285F4] focus:outline-none" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Số điện thoại</label>
+                <input type="text" value={editForm.phone} onChange={e => setEditForm({...editForm, phone: e.target.value})} className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-[#4285F4] focus:outline-none" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Trường ĐH / CĐ</label>
+                <input type="text" value={editForm.university} onChange={e => setEditForm({...editForm, university: e.target.value})} className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-[#4285F4] focus:outline-none" />
+              </div>
+              
+              <div className="flex justify-end gap-3 pt-4 border-t border-slate-200 mt-6">
+                <button type="button" onClick={() => setIsEditModalOpen(false)} className="px-4 py-2 text-slate-600 font-medium hover:bg-slate-100 rounded-lg transition-colors">Hủy</button>
+                <button type="submit" disabled={isSubmittingEdit} className="px-4 py-2 bg-[#4285F4] text-white font-medium rounded-lg hover:bg-blue-600 transition-colors disabled:bg-blue-300">
+                  {isSubmittingEdit ? "Đang lưu..." : "Lưu thay đổi"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

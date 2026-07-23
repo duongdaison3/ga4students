@@ -166,3 +166,58 @@ export const sendPersonalizedMarketingEmail = async (
   logEmailResult("Personalized Marketing email batch completed", { messageId: "batch", accepted: [], rejected: [], response: `${results.filter(r => r.success).length} succeeded` } as any);
   return results;
 };
+
+export const sendEventInvitationEmail = async (
+  email: string,
+  fullName: string,
+  event: any,
+  eventLink: string
+) => {
+  const mailOptions = {
+    from: `"Gemini Academy" <${process.env.GMAIL_USER}>`,
+    to: email,
+    subject: `[THƯ MỜI] ĐĂNG KÝ THAM GIA LỚP HỌC - ${event.title.toUpperCase()}`,
+    html: `
+      <div style="font-family: Arial, sans-serif; color: #334155; line-height: 1.6; max-width: 600px; margin: 0 auto; padding: 20px;">
+        <h2 style="color: #4285F4; text-align: center; font-size: 24px; margin-bottom: 30px;">Gemini Academy for Students</h2>
+        
+        <p>Xin chào <strong>${fullName}</strong>,</p>
+        
+        <p>Gemini Academy for Students trân trọng mời bạn đăng ký tham gia workshop <strong>${event.title}</strong>. ${event.description || ""}</p>
+        
+        <div style="margin: 25px 0;">
+          <p style="margin: 10px 0;">📅 <strong>Thời gian:</strong> ${event.time}, ngày <strong>${event.date}</strong></p>
+          <p style="margin: 10px 0;">💻 <strong>Hình thức:</strong> ${event.location}</p>
+        </div>
+        
+        <p>👉 <strong>Đăng ký ngay</strong> để giữ chỗ và nhận thông tin tham gia qua email.</p>
+        
+        <div style="text-align: center; margin: 35px 0;">
+          <a href="${eventLink}" style="background-color: #4285F4; color: white; padding: 12px 30px; text-decoration: none; border-radius: 8px; font-weight: bold; display: inline-block;">Đăng ký ngay</a>
+        </div>
+        
+        <p style="font-style: italic; color: #64748b;">Lưu ý: Nếu <strong>bạn đã đăng ký tham gia sự kiện</strong>, vui lòng <strong>bỏ qua email này</strong>.</p>
+        
+        <p>Bạn vui lòng tham gia nhóm lớp học trên nền tảng Zalo bằng cách truy cập vào link sau:</p>
+        
+        <p style="text-align: center; margin: 20px 0;">
+          <a href="https://zalo.me/g/lu6hdfxsvzdqjkhs5buv" style="color: #4285F4; font-weight: bold; font-size: 16px; text-decoration: underline;">Tham gia Nhóm Zalo Lớp Học</a>
+        </p>
+        
+        <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 30px 0;" />
+        <p style="text-align: center; font-size: 12px; color: #94a3b8;">
+          © ${new Date().getFullYear()} GSA Trainers. All rights reserved.
+        </p>
+      </div>
+    `,
+  };
+
+  try {
+    const info = await transporter.sendMail(mailOptions);
+    logEmailResult("Event Invitation Email", info);
+    return true;
+  } catch (error) {
+    console.error("Error sending event invitation email:", error);
+    return false;
+  }
+};

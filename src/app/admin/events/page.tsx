@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { collection, getDocs, addDoc, deleteDoc, doc, updateDoc, query, orderBy, where } from "firebase/firestore";
-import { db } from "@/lib/firebase";
+import { db, auth } from "@/lib/firebase";
 import { Search, Plus, Trash2, Edit, X, Eye } from "lucide-react";
 import { RichTextEditor } from "@/components/RichTextEditor";
 import { getEventStatus } from "@/lib/utils";
@@ -84,11 +84,28 @@ export default function AdminEvents() {
         });
         alert("Cập nhật sự kiện thành công!");
       } else {
-        await addDoc(collection(db, "events"), {
+        const newEventRef = await addDoc(collection(db, "events"), {
           ...formData,
           createdAt: new Date()
         });
         alert("Thêm sự kiện thành công!");
+        
+        if (confirm("Bạn có muốn gửi thư mời đăng ký tham gia sự kiện này đến tất cả học viên không?")) {
+          try {
+            const currentUser = auth.currentUser;
+            if (currentUser) {
+              const idToken = await currentUser.getIdToken();
+              fetch('/api/admin/events/invite', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${idToken}` },
+                body: JSON.stringify({ eventId: newEventRef.id })
+              });
+              alert("Hệ thống đang tiến hành gửi thư mời ngầm tới tất cả người dùng!");
+            }
+          } catch (e) {
+            console.error("Lỗi khi gọi API gửi thư mời:", e);
+          }
+        }
       }
       setIsModalOpen(false);
       fetchEvents();
