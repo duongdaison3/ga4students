@@ -17,8 +17,9 @@ export default function RegisterPage() {
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState("");
+  const [isCustomUniversity, setIsCustomUniversity] = useState(false);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
@@ -164,27 +165,66 @@ export default function RegisterPage() {
                   <label htmlFor="university" className="block text-sm font-medium text-slate-700 mb-1">
                     Trường Đại học / Cao đẳng
                   </label>
-                  <div className="relative">
-                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                      <GraduationCap className="h-5 w-5 text-slate-400" />
+                  {!isCustomUniversity ? (
+                    <div className="relative">
+                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <GraduationCap className="h-5 w-5 text-slate-400" />
+                      </div>
+                      <select
+                        id="university"
+                        name="university"
+                        required
+                        className="appearance-none block w-full pl-10 pr-10 py-3 border border-slate-300 rounded-lg shadow-sm focus:outline-none focus:ring-[#4285F4] focus:border-[#4285F4] sm:text-sm transition-colors text-slate-700 bg-white"
+                        value={formData.university}
+                        onChange={(e) => {
+                          if (e.target.value === "other") {
+                            setIsCustomUniversity(true);
+                            setFormData({ ...formData, university: "" });
+                          } else {
+                            handleChange(e);
+                          }
+                        }}
+                      >
+                        <option value="" disabled>-- Chọn trường của bạn --</option>
+                        {universities.map((uni, idx) => (
+                          <option key={idx} value={uni}>{uni}</option>
+                        ))}
+                        <option value="other" className="font-bold text-[#4285F4]">Khác... (Nhập thủ công)</option>
+                      </select>
+                      <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                        <svg className="h-5 w-5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                        </svg>
+                      </div>
                     </div>
-                    <input
-                      id="university"
-                      name="university"
-                      type="text"
-                      list="university-list"
-                      required
-                      className="appearance-none block w-full pl-10 pr-3 py-3 border border-slate-300 rounded-lg shadow-sm placeholder-slate-400 focus:outline-none focus:ring-[#4285F4] focus:border-[#4285F4] sm:text-sm transition-colors"
-                      placeholder="Nhập và chọn trường từ danh sách..."
-                      value={formData.university}
-                      onChange={handleChange}
-                    />
-                    <datalist id="university-list">
-                      {universities.map((uni, idx) => (
-                        <option key={idx} value={uni} />
-                      ))}
-                    </datalist>
-                  </div>
+                  ) : (
+                    <div className="relative">
+                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <GraduationCap className="h-5 w-5 text-slate-400" />
+                      </div>
+                      <input
+                        id="university"
+                        name="university"
+                        type="text"
+                        required
+                        className="appearance-none block w-full pl-10 pr-24 py-3 border border-slate-300 rounded-lg shadow-sm placeholder-slate-400 focus:outline-none focus:ring-[#4285F4] focus:border-[#4285F4] sm:text-sm transition-colors"
+                        placeholder="Nhập tên trường của bạn..."
+                        value={formData.university}
+                        onChange={handleChange}
+                        autoFocus
+                      />
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setIsCustomUniversity(false);
+                          setFormData({ ...formData, university: "" });
+                        }}
+                        className="absolute inset-y-0 right-0 pr-3 flex items-center text-sm text-[#4285F4] hover:text-blue-700 font-medium"
+                      >
+                        Hủy nhập
+                      </button>
+                    </div>
+                  )}
                 </div>
               </div>
 
