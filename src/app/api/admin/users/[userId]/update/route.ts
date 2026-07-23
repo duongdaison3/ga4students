@@ -28,10 +28,31 @@ export async function POST(
 
     // 1. Nếu có cập nhật email, phải cập nhật trong Firebase Auth
     if (email) {
-      await adminAuth.updateUser(userId, {
-        email,
-        displayName: fullName
-      });
+      try {
+        await adminAuth.updateUser(userId, {
+          email,
+          displayName: fullName
+        });
+      } catch (authError: any) {
+        if (authError.code === 'auth/email-already-exists') {
+          // Kiểm tra xem email này đang bị chiếm bởi tài khoản nào
+          const conflictingUser = await adminAuth.getUserByEmail(email);
+          const conflictingDoc = await adminDb.collection("users").doc(conflictingUser.uid).get();
+          
+          if (!conflictingDoc.exists) {
+            // Đây là tài khoản rác (vd: đăng nhập Google nhưng chưa đăng ký) -> xóa đi và thử lại
+            await adminAuth.deleteUser(conflictingUser.uid);
+            await adminAuth.updateUser(userId, {
+              email,
+              displayName: fullName
+            });
+          } else {
+            throw new Error("Email này đã được sử dụng bởi một học viên khác trong hệ thống!");
+          }
+        } else {
+          throw authError;
+        }
+      }
     } else if (fullName) {
       await adminAuth.updateUser(userId, {
         displayName: fullName
