@@ -44,9 +44,9 @@ export const sendAccountEmail = async (email: string, fullName: string, setPassw
         <p style="color: #64748b; font-size: 14px;">Nếu nút không hoạt động, bạn có thể sao chép liên kết sau:</p>
         <p style="word-break: break-all; color: #0f172a; font-size: 14px;">${setPasswordLink}</p>
         <p style="margin-top: 12px;"><strong>Trang đăng nhập:</strong> <a href="${loginUrl}">Truy cập tại đây</a></p>
-        <p style="margin-top: 24px; color: #0f172a;">Bạn vui lòng tham gia nhóm lớp học trên nền tảng MS Team bằng cách truy cập vào link sau:</p>
+        <p style="margin-top: 24px; color: #0f172a;">Bạn vui lòng tham gia nhóm lớp học trên nền tảng Zalo bằng cách truy cập vào link sau:</p>
         <p style="text-align: center; margin: 16px 0;">
-          <a href="https://teams.microsoft.com/l/team/19%3AGxBewz-UCQwSGKyhFNDv6-WOtt13x2wS17yCjen4UQY1%40thread.tacv2/conversations?groupId=120d9962-ae60-4a85-81de-783b3ca2fd5f&tenantId=60900ae5-d282-4ecb-9134-bf478d1b93c1" style="color: #4285F4; font-weight: bold; font-size: 16px; text-decoration: underline;">Chung | Pea - Google Academy for Students - Trainers</a>
+          <a href="https://zalo.me/g/lu6hdfxsvzdqjkhs5buv" style="color: #4285F4; font-weight: bold; font-size: 16px; text-decoration: underline;">Tham gia nhóm lớp Zalo chung</a>
         </p>
         <hr style="border: 0; border-top: 1px solid #e2e8f0; margin: 20px 0;" />
         <p style="font-size: 12px; color: #94a3b8; text-align: center;">© 2026 GSA Trainers. All rights reserved.</p>
@@ -89,7 +89,7 @@ export const sendWorkshopRegistrationEmail = async (
         
         <p style="margin-top: 24px;">Vui lòng theo dõi email và nhóm lớp để nhận tài liệu trước buổi học (nếu có).</p>
         <p style="text-align: center; margin: 16px 0;">
-          <a href="https://teams.microsoft.com/l/team/19%3AGxBewz-UCQwSGKyhFNDv6-WOtt13x2wS17yCjen4UQY1%40thread.tacv2/conversations?groupId=120d9962-ae60-4a85-81de-783b3ca2fd5f&tenantId=60900ae5-d282-4ecb-9134-bf478d1b93c1" style="color: #4285F4; font-weight: bold; font-size: 16px; text-decoration: underline;">Chung | Pea - Google Academy for Students - Trainers</a>
+          <a href="https://zalo.me/g/lu6hdfxsvzdqjkhs5buv" style="color: #4285F4; font-weight: bold; font-size: 16px; text-decoration: underline;">Tham gia nhóm lớp Zalo chung</a>
         </p>
         <hr style="border: 0; border-top: 1px solid #f1f5f9; margin: 40px 0 20px 0;" />
         <p style="font-size: 13px; color: #94a3b8; text-align: center; margin: 0;">© 2026 GSA Trainers. All rights reserved.</p>
