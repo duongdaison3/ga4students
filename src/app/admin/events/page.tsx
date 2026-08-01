@@ -32,7 +32,7 @@ export default function AdminEvents() {
     date: "",
     time: "",
     type: "Online",
-    location: "Google Meet",
+    location: "Microsoft Team",
     meetingLink: "",
     status: "opening", // fallback for older code, can be ignored
     speakerId: "",
@@ -89,7 +89,7 @@ export default function AdminEvents() {
           createdAt: new Date()
         });
         alert("Thêm sự kiện thành công!");
-        
+
         if (confirm("Bạn có muốn gửi thư mời đăng ký tham gia sự kiện này đến tất cả học viên không?")) {
           try {
             const currentUser = auth.currentUser;
@@ -112,7 +112,7 @@ export default function AdminEvents() {
       // Reset form
       setFormData({
         title: "", topic: TOPICS[0], description: "", mainContent: "",
-        date: "", time: "", type: "Online", location: "Google Meet", meetingLink: "", status: "opening",
+        date: "", time: "", type: "Online", location: "Microsoft Teams", meetingLink: "", status: "opening",
         speakerId: "", speakerName: "", slideLink: "", recordLink: ""
       });
       setEditEventId(null);
@@ -168,7 +168,7 @@ export default function AdminEvents() {
           onClick={() => {
             setFormData({
               title: "", topic: TOPICS[0], description: "", mainContent: "",
-              date: "", time: "", type: "Online", location: "Google Meet", meetingLink: "", status: "opening",
+              date: "", time: "", type: "Online", location: "Microsoft Teams", meetingLink: "", status: "opening",
               speakerId: "", speakerName: "", slideLink: "", recordLink: ""
             });
             setEditEventId(null);
@@ -200,7 +200,7 @@ export default function AdminEvents() {
                   if (status === 'upcoming') { statusBg = "bg-green-100 text-green-700"; statusText = "Sắp diễn ra"; }
                   else if (status === 'ongoing') { statusBg = "bg-blue-100 text-[#4285F4] animate-pulse"; statusText = "Đang diễn ra"; }
                   else if (status === 'past') { statusBg = "bg-slate-200 text-slate-700"; statusText = "Đã kết thúc"; }
-                  
+
                   return (
                     <span className={`text-xs font-bold px-3 py-1 rounded-full uppercase ${statusBg}`}>
                       {statusText}
@@ -311,16 +311,16 @@ export default function AdminEvents() {
                 </div>
                 <div className="space-y-2">
                   <label className="text-sm font-medium text-slate-700">Giảng viên phụ trách</label>
-                  <select 
-                    value={formData.speakerId} 
+                  <select
+                    value={formData.speakerId}
                     onChange={e => {
                       const selectedSpeaker = speakers.find(s => s.id === e.target.value);
-                      setFormData({ 
-                        ...formData, 
+                      setFormData({
+                        ...formData,
                         speakerId: e.target.value,
                         speakerName: selectedSpeaker ? selectedSpeaker.fullName : ""
                       });
-                    }} 
+                    }}
                     className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-[#4285F4] focus:outline-none"
                   >
                     <option value="">-- Chọn Giảng viên --</option>

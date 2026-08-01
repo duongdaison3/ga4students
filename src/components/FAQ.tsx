@@ -13,7 +13,7 @@ export function FAQ() {
     },
     {
       question: "Hình thức học tập và thời gian diễn ra như thế nào?",
-      answer: "• Hình thức: Học trực tuyến (Online) thông qua Google Meet hoặc nền tảng tương đương, đường link sẽ được gửi trước buổi học.\n• Thời gian: Khóa học kéo dài trong 5 buổi, bắt đầu từ ngày 01/07/2026.\n• Lịch học: Thông tin chi tiết sẽ được thông báo qua email cho học viên đăng ký thành công.",
+      answer: "• Hình thức: Học trực tuyến (Online) thông qua Microsoft Teams hoặc nền tảng tương đương, đường link sẽ được gửi trước buổi học.\n• Thời gian: Khóa học kéo dài trong 5 buổi, bắt đầu từ ngày 01/07/2026.\n• Lịch học: Thông tin chi tiết sẽ được thông báo qua email cho học viên đăng ký thành công.",
     },
     {
       question: "Tôi có phải trả phí khi tham gia học không?",
@@ -63,13 +63,13 @@ export function FAQ() {
         <h2 className="text-4xl md:text-5xl font-extrabold text-[#4285F4] text-center mb-12">
           Câu hỏi thường gặp
         </h2>
-        
+
         <div className="space-y-5 md:space-y-6">
           {faqs.map((faq, index) => {
             const isOpen = openIndex === index;
             return (
-              <div 
-                key={index} 
+              <div
+                key={index}
                 className="border border-blue-200 rounded-xl overflow-hidden bg-gradient-to-b from-white to-blue-50/50 shadow-sm"
               >
                 <button
@@ -81,8 +81,8 @@ export function FAQ() {
                     {isOpen ? <ChevronUp size={24} /> : <ChevronDown size={24} />}
                   </span>
                 </button>
-                
-                <div 
+
+                <div
                   className={`overflow-hidden transition-all duration-300 ${isOpen ? 'max-h-[500px] opacity-100' : 'max-h-0 opacity-0'}`}
                 >
                   <div className="px-6 md:px-8 pb-6 md:pb-8 pt-0 text-base md:text-lg text-slate-600 whitespace-pre-line leading-relaxed border-t border-blue-100 mt-2">
