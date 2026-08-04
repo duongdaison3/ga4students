@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { collection, doc, getDoc, getDocs, query, where, orderBy } from "firebase/firestore";
 import { db } from "@/lib/firebase";
-import { ArrowLeft, Users, Download, FileText, Video } from "lucide-react";
+import { ArrowLeft, Users, Download, FileText, Video, CheckCircle } from "lucide-react";
 import { getEventStatus } from "@/lib/utils";
 import Link from "next/link";
 
@@ -50,11 +50,12 @@ export default function EventDetails() {
   }, [id, router]);
 
   const handleExportCSV = () => {
-    const headers = ["Họ và Tên", "Email", "Thời gian đăng ký"];
+    const headers = ["Họ và Tên", "Email", "Thời gian đăng ký", "Trạng thái Điểm danh"];
     const rows = registrations.map(r => [
       r.userFullName,
       r.userEmail,
-      r.registeredAt ? new Date(r.registeredAt.seconds * 1000).toLocaleString("vi-VN") : ""
+      r.registeredAt ? new Date(r.registeredAt.seconds * 1000).toLocaleString("vi-VN") : "",
+      r.attended ? "Đã tham gia" : "Chưa"
     ]);
     
     let csvContent = "data:text/csv;charset=utf-8,\uFEFF" 
@@ -68,6 +69,41 @@ export default function EventDetails() {
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+  };
+
+  const handleAttendance = async (userId: string, currentStatus: boolean) => {
+    if (currentStatus) return; // Cannot undo attendance for now to avoid point complexity
+    if (!confirm("Xác nhận sinh viên này đã tham gia sự kiện? Hệ thống sẽ cộng 100 điểm cho sinh viên.")) return;
+
+    try {
+      const { auth } = await import("@/lib/firebase");
+      const currentUser = auth.currentUser;
+      if (!currentUser) throw new Error("Chưa đăng nhập");
+      const idToken = await currentUser.getIdToken();
+
+      const res = await fetch("/api/missions/claim", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${idToken}`
+        },
+        body: JSON.stringify({
+          eventId: id,
+          missionType: "attendance",
+          targetUserId: userId
+        })
+      });
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Lỗi điểm danh");
+
+      alert("Điểm danh thành công! Sinh viên đã được cộng 100 điểm.");
+      
+      // Update local state
+      setRegistrations(prev => prev.map(r => r.userId === userId ? { ...r, attended: true } : r));
+    } catch (error: any) {
+      alert(error.message || "Đã xảy ra lỗi");
+    }
   };
 
   if (isLoading) return <div className="text-center py-10">Đang tải dữ liệu...</div>;
@@ -144,6 +180,7 @@ export default function EventDetails() {
                 <th className="p-4">Họ và Tên</th>
                 <th className="p-4">Email</th>
                 <th className="p-4">Thời gian đăng ký</th>
+                <th className="p-4 text-center">Điểm danh</th>
               </tr>
             </thead>
             <tbody>
@@ -159,6 +196,21 @@ export default function EventDetails() {
                     <td className="p-4 text-slate-600">{reg.userEmail}</td>
                     <td className="p-4 text-slate-500 text-sm">
                       {reg.registeredAt?.seconds ? new Date(reg.registeredAt.seconds * 1000).toLocaleString("vi-VN") : "N/A"}
+                    </td>
+                    <td className="p-4 text-center">
+                      <button 
+                        onClick={() => handleAttendance(reg.userId, reg.attended)}
+                        disabled={reg.attended}
+                        className={`inline-flex items-center justify-center gap-2 px-3 py-1.5 rounded-lg text-sm font-semibold transition-colors ${
+                          reg.attended 
+                            ? "bg-green-100 text-green-700 cursor-default border border-green-200" 
+                            : "bg-white border border-slate-300 text-slate-600 hover:bg-[#4285F4] hover:text-white hover:border-[#4285F4]"
+                        }`}
+                        title={reg.attended ? "Đã điểm danh" : "Click để điểm danh"}
+                      >
+                        {reg.attended ? <CheckCircle className="w-4 h-4" /> : null}
+                        {reg.attended ? "Đã tham gia" : "Điểm danh"}
+                      </button>
                     </td>
                   </tr>
                 ))

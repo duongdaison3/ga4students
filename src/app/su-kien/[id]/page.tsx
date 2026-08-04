@@ -7,7 +7,8 @@ import { db, auth } from "@/lib/firebase";
 import { onAuthStateChanged, User } from "firebase/auth";
 import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
-import { Calendar, Clock, MapPin, ArrowLeft, ArrowRight, User as UserIcon } from "lucide-react";
+import { Calendar, Clock, MapPin, ArrowLeft, ArrowRight, User as UserIcon, Share2, MessageCircle, Sparkles, CheckCircle } from "lucide-react";
+import { getEventStatus } from "@/lib/utils";
 import Link from "next/link";
 
 export default function EventDetailsPage() {
@@ -19,6 +20,8 @@ export default function EventDetailsPage() {
   const [user, setUser] = useState<User | null>(null);
   const [processing, setProcessing] = useState(false);
   const [isRegistered, setIsRegistered] = useState(false);
+  const [claimedMissions, setClaimedMissions] = useState<string[]>([]);
+  const [missionLoading, setMissionLoading] = useState<string | null>(null);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
@@ -29,6 +32,16 @@ export default function EventDetailsPage() {
           const registered = userDoc.data().registeredWorkshops || [];
           setIsRegistered(registered.includes(id as string));
         }
+
+        // Fetch claimed missions
+        const { collection, query, where, getDocs } = await import("firebase/firestore");
+        const q = query(
+          collection(db, "user_missions"), 
+          where("userId", "==", currentUser.uid),
+          where("eventId", "==", id)
+        );
+        const snap = await getDocs(q);
+        setClaimedMissions(snap.docs.map(d => d.data().missionType));
       }
     });
 
@@ -91,6 +104,32 @@ export default function EventDetailsPage() {
       alert(error.message);
     } finally {
       setProcessing(false);
+    }
+  };
+
+  const handleClaimMission = async (missionType: string) => {
+    if (!user) return;
+    setMissionLoading(missionType);
+    try {
+      const idToken = await user.getIdToken();
+      const response = await fetch("/api/missions/claim", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${idToken}`
+        },
+        body: JSON.stringify({ eventId: event.id, missionType, targetUserId: user.uid })
+      });
+      
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || "Lỗi nhận điểm");
+
+      alert(`Thành công! Bạn được cộng ${data.points} điểm.`);
+      setClaimedMissions([...claimedMissions, missionType]);
+    } catch (error: any) {
+      alert(error.message);
+    } finally {
+      setMissionLoading(null);
     }
   };
 
@@ -215,6 +254,114 @@ export default function EventDetailsPage() {
           ) : (
             <div className="bg-slate-100 rounded-3xl p-8 text-center text-slate-500 font-medium">
               Sự kiện này đã đóng đăng ký.
+            </div>
+          )}
+
+          {/* Missions Board */}
+          {user && isRegistered && event && (
+            <div className="mt-8 bg-white rounded-3xl p-8 border border-amber-200 shadow-[0_10px_40px_-10px_rgba(251,188,5,0.15)] relative overflow-hidden">
+              <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-bl from-amber-100 to-transparent rounded-bl-full opacity-50 pointer-events-none"></div>
+              
+              <div className="flex items-center gap-3 mb-6">
+                <Sparkles className="w-8 h-8 text-amber-500" />
+                <h2 className="text-2xl font-bold text-slate-800">Nhiệm vụ The Gemini Elite</h2>
+              </div>
+              <p className="text-slate-600 mb-8">
+                Hoàn thành các nhiệm vụ dưới đây để tích lũy điểm thưởng và lọt vào Bảng Vàng <strong>The Gemini Elite</strong>!
+              </p>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* Nhiệm vụ 1: Điểm danh */}
+                <div className={`p-5 rounded-2xl border ${claimedMissions.includes('attendance') ? 'bg-green-50 border-green-200' : 'bg-slate-50 border-slate-200'}`}>
+                  <div className="flex justify-between items-start mb-2">
+                    <h3 className="font-bold text-slate-800 flex items-center gap-2">
+                      <UserIcon className="w-4 h-4" /> Tham gia Sự kiện
+                    </h3>
+                    <span className="px-2 py-1 bg-amber-100 text-amber-700 text-xs font-bold rounded-lg">+100đ</span>
+                  </div>
+                  <p className="text-sm text-slate-500 mb-4">Có mặt tham gia sự kiện và được Admin điểm danh.</p>
+                  {claimedMissions.includes('attendance') ? (
+                    <div className="flex items-center gap-2 text-green-600 text-sm font-bold">
+                      <CheckCircle className="w-4 h-4" /> Đã hoàn thành
+                    </div>
+                  ) : (
+                    <div className="text-slate-400 text-sm italic">Chờ Admin điểm danh...</div>
+                  )}
+                </div>
+
+                {/* Nhiệm vụ 2: Chia sẻ */}
+                <div className={`p-5 rounded-2xl border ${claimedMissions.includes('share') ? 'bg-green-50 border-green-200' : 'bg-slate-50 border-slate-200'}`}>
+                  <div className="flex justify-between items-start mb-2">
+                    <h3 className="font-bold text-slate-800 flex items-center gap-2">
+                      <Share2 className="w-4 h-4" /> Chia sẻ Sự kiện
+                    </h3>
+                    <span className="px-2 py-1 bg-amber-100 text-amber-700 text-xs font-bold rounded-lg">+100đ</span>
+                  </div>
+                  <p className="text-sm text-slate-500 mb-4">Chia sẻ trang sự kiện này lên Facebook / Zalo cá nhân của bạn.</p>
+                  {claimedMissions.includes('share') ? (
+                    <div className="flex items-center gap-2 text-green-600 text-sm font-bold">
+                      <CheckCircle className="w-4 h-4" /> Đã hoàn thành
+                    </div>
+                  ) : (
+                    <button 
+                      onClick={() => handleClaimMission('share')}
+                      disabled={missionLoading === 'share'}
+                      className="w-full py-2 bg-white border border-slate-300 rounded-lg text-sm font-bold text-slate-700 hover:bg-slate-50 hover:border-[#4285F4] transition-colors"
+                    >
+                      {missionLoading === 'share' ? 'Đang xử lý...' : 'Đã chia sẻ (Nhận điểm)'}
+                    </button>
+                  )}
+                </div>
+
+                {/* Nhiệm vụ 3: Recap */}
+                <div className={`p-5 rounded-2xl border ${claimedMissions.includes('recap') ? 'bg-green-50 border-green-200' : 'bg-slate-50 border-slate-200'}`}>
+                  <div className="flex justify-between items-start mb-2">
+                    <h3 className="font-bold text-slate-800 flex items-center gap-2">
+                      <MessageCircle className="w-4 h-4" /> Tham gia Recap
+                    </h3>
+                    <span className="px-2 py-1 bg-amber-100 text-amber-700 text-xs font-bold rounded-lg">+100đ</span>
+                  </div>
+                  <p className="text-sm text-slate-500 mb-4">Chia sẻ cảm nhận/bài học sau sự kiện vào Nhóm Zalo lớp học.</p>
+                  {claimedMissions.includes('recap') ? (
+                    <div className="flex items-center gap-2 text-green-600 text-sm font-bold">
+                      <CheckCircle className="w-4 h-4" /> Đã hoàn thành
+                    </div>
+                  ) : (
+                    <button 
+                      onClick={() => handleClaimMission('recap')}
+                      disabled={missionLoading === 'recap' || getEventStatus(event.date, event.time) !== 'past'}
+                      className={`w-full py-2 rounded-lg text-sm font-bold transition-colors ${getEventStatus(event.date, event.time) !== 'past' ? 'bg-slate-100 text-slate-400 cursor-not-allowed border border-transparent' : 'bg-white border border-slate-300 text-slate-700 hover:bg-slate-50 hover:border-[#4285F4]'}`}
+                      title={getEventStatus(event.date, event.time) !== 'past' ? 'Chỉ mở sau khi sự kiện kết thúc' : ''}
+                    >
+                      {missionLoading === 'recap' ? 'Đang xử lý...' : getEventStatus(event.date, event.time) !== 'past' ? 'Chưa mở' : 'Đã đăng Recap (Nhận điểm)'}
+                    </button>
+                  )}
+                </div>
+
+                {/* Nhiệm vụ 4: Thực hành Gemini */}
+                <div className={`p-5 rounded-2xl border ${claimedMissions.includes('gemini_prompt') ? 'bg-green-50 border-green-200' : 'bg-slate-50 border-slate-200'}`}>
+                  <div className="flex justify-between items-start mb-2">
+                    <h3 className="font-bold text-slate-800 flex items-center gap-2">
+                      <Sparkles className="w-4 h-4 text-purple-500" /> Thực hành Gemini
+                    </h3>
+                    <span className="px-2 py-1 bg-amber-100 text-amber-700 text-xs font-bold rounded-lg">+50đ</span>
+                  </div>
+                  <p className="text-sm text-slate-500 mb-4">Ứng dụng thử các câu lệnh Prompt được học vào Gemini.</p>
+                  {claimedMissions.includes('gemini_prompt') ? (
+                    <div className="flex items-center gap-2 text-green-600 text-sm font-bold">
+                      <CheckCircle className="w-4 h-4" /> Đã hoàn thành
+                    </div>
+                  ) : (
+                    <button 
+                      onClick={() => handleClaimMission('gemini_prompt')}
+                      disabled={missionLoading === 'gemini_prompt'}
+                      className="w-full py-2 bg-white border border-slate-300 rounded-lg text-sm font-bold text-slate-700 hover:bg-slate-50 hover:border-purple-400 transition-colors"
+                    >
+                      {missionLoading === 'gemini_prompt' ? 'Đang xử lý...' : 'Đã thực hành (Nhận điểm)'}
+                    </button>
+                  )}
+                </div>
+              </div>
             </div>
           )}
         </div>
