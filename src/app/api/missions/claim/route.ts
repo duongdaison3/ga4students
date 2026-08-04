@@ -15,12 +15,73 @@ export async function POST(req: Request) {
     const userId = decodedToken.uid;
 
     const body = await req.json();
-    const { eventId, missionType, targetUserId } = body;
+    const { eventId, missionType, targetUserId, targetUserIds } = body;
 
     if (!eventId || !missionType) {
       return NextResponse.json({ error: "Thiếu thông tin nhiệm vụ" }, { status: 400 });
     }
 
+    if (missionType === "attendance" && targetUserIds && Array.isArray(targetUserIds)) {
+      // BATCH PROCESSING FOR MULTIPLE USERS
+      const callerDoc = await adminDb.collection("users").doc(userId).get();
+      if (!callerDoc.exists || callerDoc.data()?.role !== "admin") {
+        return NextResponse.json({ error: "Chỉ Admin mới có quyền điểm danh" }, { status: 403 });
+      }
+
+      let successCount = 0;
+      let alreadyClaimedCount = 0;
+
+      // Process sequentially to avoid lock contentions and complexity
+      for (const uid of targetUserIds) {
+        try {
+          await adminDb.runTransaction(async (transaction) => {
+            const missionId = `${uid}_${eventId}_attendance`;
+            const missionRef = adminDb.collection("user_missions").doc(missionId);
+            const missionDoc = await transaction.get(missionRef);
+            
+            if (missionDoc.exists) {
+              alreadyClaimedCount++;
+              return; // skip if already claimed
+            }
+
+            transaction.set(missionRef, {
+              userId: uid,
+              eventId,
+              missionType: "attendance",
+              points: 100,
+              createdAt: new Date()
+            });
+
+            const userRef = adminDb.collection("users").doc(uid);
+            const userDoc = await transaction.get(userRef);
+            if (userDoc.exists) {
+              const currentPoints = userDoc.data()?.totalPoints || 0;
+              transaction.update(userRef, { totalPoints: currentPoints + 100 });
+            }
+
+            const regSnapshot = await adminDb.collection("registrations")
+              .where("userId", "==", uid)
+              .where("eventId", "==", eventId)
+              .limit(1)
+              .get();
+            
+            if (!regSnapshot.empty) {
+              transaction.update(regSnapshot.docs[0].ref, { attended: true });
+            }
+          });
+          successCount++;
+        } catch (e) {
+          console.error(`Failed to process attendance for ${uid}:`, e);
+        }
+      }
+
+      return NextResponse.json({ 
+        success: true, 
+        message: `Đã điểm danh thành công ${successCount} sinh viên. (Bỏ qua ${alreadyClaimedCount} người đã được điểm danh trước đó)` 
+      });
+    }
+
+    // SINGLE USER PROCESSING
     // Determine points and permissions
     let points = 0;
     let uidToReward = userId; // By default, reward the caller

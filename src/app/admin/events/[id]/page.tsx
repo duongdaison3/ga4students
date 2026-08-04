@@ -15,6 +15,8 @@ export default function EventDetails() {
   const [event, setEvent] = useState<any>(null);
   const [registrations, setRegistrations] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [selectedUsers, setSelectedUsers] = useState<Set<string>>(new Set());
+  const [isBatchAttending, setIsBatchAttending] = useState(false);
 
   useEffect(() => {
     async function fetchData() {
@@ -71,15 +73,18 @@ export default function EventDetails() {
     document.body.removeChild(link);
   };
 
-  const handleAttendance = async (userId: string, currentStatus: boolean) => {
-    if (currentStatus) return; // Cannot undo attendance for now to avoid point complexity
-    if (!confirm("Xác nhận sinh viên này đã tham gia sự kiện? Hệ thống sẽ cộng 100 điểm cho sinh viên.")) return;
+  const handleBatchAttendance = async () => {
+    if (selectedUsers.size === 0) return;
+    if (!confirm(`Xác nhận điểm danh cho ${selectedUsers.size} sinh viên đã chọn? Hệ thống sẽ cộng 100 điểm cho mỗi người.`)) return;
 
+    setIsBatchAttending(true);
     try {
       const { auth } = await import("@/lib/firebase");
       const currentUser = auth.currentUser;
       if (!currentUser) throw new Error("Chưa đăng nhập");
       const idToken = await currentUser.getIdToken();
+
+      const targetUserIds = Array.from(selectedUsers);
 
       const res = await fetch("/api/missions/claim", {
         method: "POST",
@@ -90,19 +95,38 @@ export default function EventDetails() {
         body: JSON.stringify({
           eventId: id,
           missionType: "attendance",
-          targetUserId: userId
+          targetUserIds: targetUserIds
         })
       });
 
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Lỗi điểm danh");
+      if (!res.ok) throw new Error(data.error || "Lỗi điểm danh hàng loạt");
 
-      alert("Điểm danh thành công! Sinh viên đã được cộng 100 điểm.");
+      alert(data.message || "Điểm danh thành công!");
       
       // Update local state
-      setRegistrations(prev => prev.map(r => r.userId === userId ? { ...r, attended: true } : r));
+      setRegistrations(prev => prev.map(r => targetUserIds.includes(r.userId) ? { ...r, attended: true } : r));
+      setSelectedUsers(new Set());
     } catch (error: any) {
       alert(error.message || "Đã xảy ra lỗi");
+    } finally {
+      setIsBatchAttending(false);
+    }
+  };
+
+  const toggleSelectUser = (userId: string) => {
+    const newSet = new Set(selectedUsers);
+    if (newSet.has(userId)) newSet.delete(userId);
+    else newSet.add(userId);
+    setSelectedUsers(newSet);
+  };
+
+  const toggleSelectAll = () => {
+    const unattended = registrations.filter(r => !r.attended).map(r => r.userId);
+    if (selectedUsers.size === unattended.length && unattended.length > 0) {
+      setSelectedUsers(new Set()); // deselect all
+    } else {
+      setSelectedUsers(new Set(unattended)); // select all unattended
     }
   };
 
@@ -160,15 +184,28 @@ export default function EventDetails() {
           Danh sách Đăng ký ({registrations.length})
         </h3>
         
-        {registrations.length > 0 && (
-          <button 
-            onClick={handleExportCSV}
-            className="flex items-center gap-2 px-4 py-2 bg-green-50 text-green-700 hover:bg-green-100 rounded-lg font-medium transition-colors text-sm"
-          >
-            <Download className="w-4 h-4" />
-            Xuất Excel (CSV)
-          </button>
-        )}
+        <div className="flex items-center gap-3">
+          {selectedUsers.size > 0 && (
+            <button 
+              onClick={handleBatchAttendance}
+              disabled={isBatchAttending}
+              className="flex items-center gap-2 px-4 py-2 bg-[#4285F4] text-white hover:bg-blue-600 rounded-lg font-medium transition-colors text-sm shadow-sm"
+            >
+              <CheckCircle className="w-4 h-4" />
+              {isBatchAttending ? "Đang xử lý..." : `Điểm danh đã chọn (${selectedUsers.size})`}
+            </button>
+          )}
+
+          {registrations.length > 0 && (
+            <button 
+              onClick={handleExportCSV}
+              className="flex items-center gap-2 px-4 py-2 bg-green-50 text-green-700 hover:bg-green-100 rounded-lg font-medium transition-colors text-sm"
+            >
+              <Download className="w-4 h-4" />
+              Xuất Excel (CSV)
+            </button>
+          )}
+        </div>
       </div>
 
       <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
@@ -176,11 +213,19 @@ export default function EventDetails() {
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="bg-slate-50 border-b border-slate-200 text-sm font-semibold text-slate-600">
+                <th className="p-4 w-12 text-center">
+                  <input 
+                    type="checkbox" 
+                    className="w-4 h-4 cursor-pointer rounded text-[#4285F4] focus:ring-[#4285F4]"
+                    checked={registrations.filter(r => !r.attended).length > 0 && selectedUsers.size === registrations.filter(r => !r.attended).length}
+                    onChange={toggleSelectAll}
+                  />
+                </th>
                 <th className="p-4 w-16 text-center">STT</th>
                 <th className="p-4">Họ và Tên</th>
                 <th className="p-4">Email</th>
                 <th className="p-4">Thời gian đăng ký</th>
-                <th className="p-4 text-center">Điểm danh</th>
+                <th className="p-4 text-center">Trạng thái</th>
               </tr>
             </thead>
             <tbody>
@@ -190,7 +235,16 @@ export default function EventDetails() {
                 </tr>
               ) : (
                 registrations.map((reg, idx) => (
-                  <tr key={reg.id} className="border-b border-slate-100 hover:bg-slate-50">
+                  <tr key={reg.id} className={`border-b border-slate-100 hover:bg-slate-50 ${selectedUsers.has(reg.userId) ? 'bg-blue-50/30' : ''}`}>
+                    <td className="p-4 text-center">
+                      <input 
+                        type="checkbox" 
+                        className="w-4 h-4 cursor-pointer rounded text-[#4285F4] focus:ring-[#4285F4] disabled:opacity-50"
+                        checked={reg.attended || selectedUsers.has(reg.userId)}
+                        disabled={reg.attended}
+                        onChange={() => toggleSelectUser(reg.userId)}
+                      />
+                    </td>
                     <td className="p-4 text-center font-medium text-slate-500">{idx + 1}</td>
                     <td className="p-4 font-bold text-slate-900">{reg.userFullName}</td>
                     <td className="p-4 text-slate-600">{reg.userEmail}</td>
@@ -198,19 +252,13 @@ export default function EventDetails() {
                       {reg.registeredAt?.seconds ? new Date(reg.registeredAt.seconds * 1000).toLocaleString("vi-VN") : "N/A"}
                     </td>
                     <td className="p-4 text-center">
-                      <button 
-                        onClick={() => handleAttendance(reg.userId, reg.attended)}
-                        disabled={reg.attended}
-                        className={`inline-flex items-center justify-center gap-2 px-3 py-1.5 rounded-lg text-sm font-semibold transition-colors ${
-                          reg.attended 
-                            ? "bg-green-100 text-green-700 cursor-default border border-green-200" 
-                            : "bg-white border border-slate-300 text-slate-600 hover:bg-[#4285F4] hover:text-white hover:border-[#4285F4]"
-                        }`}
-                        title={reg.attended ? "Đã điểm danh" : "Click để điểm danh"}
-                      >
-                        {reg.attended ? <CheckCircle className="w-4 h-4" /> : null}
-                        {reg.attended ? "Đã tham gia" : "Điểm danh"}
-                      </button>
+                      {reg.attended ? (
+                        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-green-50 text-green-700 text-xs font-bold border border-green-200">
+                          <CheckCircle className="w-3.5 h-3.5" /> Đã tham gia
+                        </span>
+                      ) : (
+                        <span className="text-slate-400 text-sm italic">Chưa tham gia</span>
+                      )}
                     </td>
                   </tr>
                 ))
