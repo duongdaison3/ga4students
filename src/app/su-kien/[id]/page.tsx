@@ -22,6 +22,8 @@ export default function EventDetailsPage() {
   const [isRegistered, setIsRegistered] = useState(false);
   const [claimedMissions, setClaimedMissions] = useState<string[]>([]);
   const [missionLoading, setMissionLoading] = useState<string | null>(null);
+  const [shareStep, setShareStep] = useState(0);
+  const [recapStep, setRecapStep] = useState(0);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
@@ -143,6 +145,56 @@ export default function EventDetailsPage() {
       alert(error.message);
     } finally {
       setMissionLoading(null);
+    }
+  };
+
+  const handleShareClick = () => {
+    if (!user || !event) return;
+    const status = getEventStatus(event.date, event.time);
+    
+    if (status === 'past') {
+      alert("Chỉ có thể chia sẻ khi sự kiện chưa hoặc đang diễn ra.");
+      return;
+    }
+
+    if (shareStep === 0) {
+      const shareText = `${user.displayName || 'Mình'} mời bạn tham gia sự kiện ${event.title} được tổ chức tại: ${window.location.href}\n\n${event.description}\n\nĐăng ký tham gia ngay để CÓ CƠ HỘI nhận giấy chứng nhận từ Google cùng nhiều phần quà hấp dẫn.`;
+      
+      navigator.clipboard.writeText(shareText).then(() => {
+        alert("Đã copy nội dung bài đăng! Hệ thống sẽ mở Facebook. Vui lòng dán (Ctrl+V) vào bài viết của bạn nhé.");
+        window.open('https://www.facebook.com/sharer/sharer.php?u=' + encodeURIComponent(window.location.href), '_blank');
+        setShareStep(1);
+      }).catch(err => {
+        console.error("Lỗi copy clipboard", err);
+        alert("Không thể copy tự động, vui lòng thử lại sau.");
+      });
+    } else {
+      handleClaimMission('share');
+    }
+  };
+
+  const handleRecapClick = () => {
+    if (!user || !event) return;
+    const status = getEventStatus(event.date, event.time);
+    
+    if (status !== 'past') {
+      alert("Chỉ có thể nhận điểm Recap sau khi sự kiện đã kết thúc.");
+      return;
+    }
+
+    if (recapStep === 0) {
+      const recapText = `[RECAP SỰ KIỆN: ${event.title}]\nXin chào mọi người, mình là ${user.displayName || 'một thành viên lớp'}.\nĐây là một số bài học và cảm nhận của mình sau sự kiện ngày ${event.date}...\n\n(Vui lòng viết tiếp cảm nhận của bạn vào đây)`;
+      
+      navigator.clipboard.writeText(recapText).then(() => {
+        alert("Đã copy mẫu Recap! Hệ thống sẽ mở Zalo. Vui lòng dán (Ctrl+V) vào Nhóm Zalo lớp học và viết thêm cảm nhận của bạn nhé.");
+        window.open('https://chat.zalo.me/', '_blank');
+        setRecapStep(1);
+      }).catch(err => {
+        console.error("Lỗi copy clipboard", err);
+        alert("Không thể copy tự động, vui lòng thử lại sau.");
+      });
+    } else {
+      handleClaimMission('recap');
     }
   };
 
@@ -317,11 +369,19 @@ export default function EventDetailsPage() {
                     </div>
                   ) : (
                     <button 
-                      onClick={() => handleClaimMission('share')}
+                      onClick={handleShareClick}
                       disabled={missionLoading === 'share'}
-                      className="w-full py-2 bg-white border border-slate-300 rounded-lg text-sm font-bold text-slate-700 hover:bg-slate-50 hover:border-[#4285F4] transition-colors"
+                      className={`w-full py-2 rounded-lg text-sm font-bold transition-colors ${
+                        shareStep === 1 
+                          ? "bg-[#4285F4] text-white hover:bg-blue-600" 
+                          : "bg-white border border-slate-300 text-slate-700 hover:bg-slate-50 hover:border-[#4285F4]"
+                      }`}
                     >
-                      {missionLoading === 'share' ? 'Đang xử lý...' : 'Đã chia sẻ (Nhận điểm)'}
+                      {missionLoading === 'share' 
+                        ? 'Đang xử lý...' 
+                        : shareStep === 1 
+                          ? 'Đã chia sẻ (Nhận điểm)' 
+                          : 'Đăng Facebook & Nhận điểm'}
                     </button>
                   )}
                 </div>
@@ -341,12 +401,24 @@ export default function EventDetailsPage() {
                     </div>
                   ) : (
                     <button 
-                      onClick={() => handleClaimMission('recap')}
+                      onClick={handleRecapClick}
                       disabled={missionLoading === 'recap' || getEventStatus(event.date, event.time) !== 'past'}
-                      className={`w-full py-2 rounded-lg text-sm font-bold transition-colors ${getEventStatus(event.date, event.time) !== 'past' ? 'bg-slate-100 text-slate-400 cursor-not-allowed border border-transparent' : 'bg-white border border-slate-300 text-slate-700 hover:bg-slate-50 hover:border-[#4285F4]'}`}
+                      className={`w-full py-2 rounded-lg text-sm font-bold transition-colors ${
+                        getEventStatus(event.date, event.time) !== 'past' 
+                          ? 'bg-slate-100 text-slate-400 cursor-not-allowed border border-transparent' 
+                          : recapStep === 1
+                            ? 'bg-[#4285F4] text-white hover:bg-blue-600'
+                            : 'bg-white border border-slate-300 text-slate-700 hover:bg-slate-50 hover:border-[#4285F4]'
+                      }`}
                       title={getEventStatus(event.date, event.time) !== 'past' ? 'Chỉ mở sau khi sự kiện kết thúc' : ''}
                     >
-                      {missionLoading === 'recap' ? 'Đang xử lý...' : getEventStatus(event.date, event.time) !== 'past' ? 'Chưa mở' : 'Đã đăng Recap (Nhận điểm)'}
+                      {missionLoading === 'recap' 
+                        ? 'Đang xử lý...' 
+                        : getEventStatus(event.date, event.time) !== 'past' 
+                          ? 'Chưa mở' 
+                          : recapStep === 1
+                            ? 'Xác nhận Nhận điểm Recap'
+                            : 'Đăng Zalo & Nhận điểm'}
                     </button>
                   )}
                 </div>
