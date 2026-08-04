@@ -108,7 +108,20 @@ export default function EventDetailsPage() {
   };
 
   const handleClaimMission = async (missionType: string) => {
-    if (!user) return;
+    if (!user || !event) return;
+    
+    const status = getEventStatus(event.date, event.time);
+    
+    if (missionType === 'share' && status === 'past') {
+      alert("Chỉ có thể chia sẻ khi sự kiện chưa hoặc đang diễn ra.");
+      return;
+    }
+    
+    if (missionType === 'recap' && status !== 'past') {
+      alert("Chỉ có thể nhận điểm Recap sau khi sự kiện đã kết thúc.");
+      return;
+    }
+
     setMissionLoading(missionType);
     try {
       const idToken = await user.getIdToken();
@@ -226,7 +239,7 @@ export default function EventDetailsPage() {
           </div>
           
           {/* Registration Box */}
-          {event.status === 'opening' ? (
+          {event.status === 'opening' && getEventStatus(event.date, event.time) !== 'past' ? (
             <div className="bg-gradient-to-br from-[#4285F4] to-[#3b77db] rounded-3xl p-8 md:p-12 text-white text-center shadow-xl">
               <h2 className="text-2xl md:text-3xl font-bold mb-4">Sẵn sàng nâng cấp kỹ năng?</h2>
               <p className="text-blue-100 mb-8 max-w-2xl mx-auto">

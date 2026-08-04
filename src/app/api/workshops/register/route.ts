@@ -57,6 +57,8 @@ export async function POST(req: Request) {
       userId: uid,
       userEmail: email,
       userFullName: fullName,
+      userUniversity: userDoc.exists ? (userDoc.data()?.university || "Trường Đại học") : "Trường Đại học",
+      eventTitle: workshopTitle,
       registeredAt: new Date()
     });
 

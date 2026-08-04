@@ -42,12 +42,48 @@ export default function TheGeminiElitePage() {
               id: data.userId,
               fullName: data.userFullName,
               university: data.userUniversity || "Trường Đại học",
-              eventName: data.eventTitle || "Một sự kiện GSA"
+              eventName: data.eventTitle || "Một sự kiện GSA",
+              eventId: data.eventId
             });
           }
         });
         
-        setActiveUsers(Array.from(activeMap.values()));
+        // Fetch actual university and event names if they were missing in the registration doc
+        const { doc: firestoreDoc, getDoc: firestoreGetDoc } = await import("firebase/firestore");
+        const resolvedActiveUsers = await Promise.all(
+          Array.from(activeMap.values()).map(async (u) => {
+            let university = u.university;
+            let eventName = u.eventName;
+
+            // Fetch university if it's the fallback
+            if (university === "Trường Đại học") {
+              try {
+                const uDoc = await firestoreGetDoc(firestoreDoc(db, "users", u.id));
+                if (uDoc.exists() && uDoc.data().university) {
+                  university = uDoc.data().university;
+                }
+              } catch (e) {
+                console.error(e);
+              }
+            }
+
+            // Fetch event name if it's the fallback and eventId exists
+            if (eventName === "Một sự kiện GSA" && u.eventId) {
+              try {
+                const eDoc = await firestoreGetDoc(firestoreDoc(db, "events", u.eventId));
+                if (eDoc.exists() && eDoc.data().title) {
+                  eventName = eDoc.data().title;
+                }
+              } catch (e) {
+                console.error(e);
+              }
+            }
+
+            return { ...u, university, eventName };
+          })
+        );
+        
+        setActiveUsers(resolvedActiveUsers);
       } catch (error) {
         console.error("Lỗi khi tải bảng vàng:", error);
       } finally {
