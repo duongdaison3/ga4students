@@ -110,9 +110,13 @@ export default function TheGeminiElitePage() {
             <h1 className="text-4xl md:text-6xl font-extrabold text-white mb-6">
               The <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-400">Gemini Elite</span>
             </h1>
-            <p className="text-lg md:text-xl text-slate-300">
+            <p className="text-lg md:text-xl text-slate-300 mb-8">
               Nơi vinh danh những tài năng xuất sắc và năng động nhất trong cộng đồng Gemini Academy for Students.
             </p>
+            <a href="/doi-qua" className="inline-flex items-center gap-2 bg-gradient-to-r from-yellow-400 to-amber-500 text-slate-900 font-bold px-8 py-4 rounded-full shadow-lg shadow-amber-500/20 hover:shadow-amber-500/40 hover:-translate-y-1 transition-all">
+              <Star className="w-5 h-5" />
+              Đến Cửa Hàng Đổi Quà
+            </a>
           </div>
         </div>
 

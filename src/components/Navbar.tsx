@@ -61,6 +61,7 @@ export function Navbar() {
     { name: "Sắp diễn ra", href: "/su-kien#upcoming" },
     { name: "Đã diễn ra", href: "/su-kien#past" },
     { name: "Bảng Vàng Elite", href: "/the-gemini-elite" },
+    { name: "Cửa hàng Đổi Quà", href: "/doi-qua" },
   ];
 
   return (
