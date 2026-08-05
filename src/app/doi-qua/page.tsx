@@ -15,9 +15,9 @@ const REWARDS = [
   { id: "gemini_pro_1m", name: "Gemini Pro 1 tháng", points: 1500, type: "digital", limit: "Số lượng có hạn" },
   { id: "canva_pro_1m", name: "Canva Pro 1 tháng", points: 1200, type: "digital", limit: "Số lượng có hạn" },
   { id: "digital_random", name: "Bộ quà tặng Digital ngẫu nhiên", points: 1000, type: "digital", limit: "Số lượng có hạn" },
-  { id: "phys_combo", name: "Bộ quà tặng: bút, móc khóa Google", points: 750, type: "physical", limit: "Số lượng có hạn" },
-  { id: "phys_keychain", name: "Móc khóa Google", points: 300, type: "physical", limit: "Số lượng có hạn" },
-  { id: "phys_pen", name: "Bút bi Google", points: 300, type: "physical", limit: "Số lượng có hạn" },
+  { id: "phys_combo", name: "Bộ quà tặng: bút, móc khóa Google", points: 650, type: "physical", limit: "Số lượng có hạn" },
+  { id: "phys_keychain", name: "Móc khóa Google", points: 350, type: "physical", limit: "Số lượng có hạn" },
+  { id: "phys_pen", name: "Bút bi Google", points: 350, type: "physical", limit: "Số lượng có hạn" },
   { id: "phys_random", name: "Quà lưu niệm ngẫu nhiên", points: 250, type: "physical", limit: "Số lượng có hạn" },
 ];
 
@@ -30,7 +30,7 @@ export default function RewardStorePage() {
 
   const [selectedReward, setSelectedReward] = useState<any | null>(null);
   const [isRedeeming, setIsRedeeming] = useState(false);
-  
+
   // Form state
   const [address, setAddress] = useState("");
   const [phone, setPhone] = useState("");
@@ -44,7 +44,7 @@ export default function RewardStorePage() {
         return;
       }
       setUser(currentUser);
-      
+
       try {
         // Fetch user points
         const uDoc = await getDoc(doc(db, "users", currentUser.uid));
@@ -115,10 +115,10 @@ export default function RewardStorePage() {
       if (!res.ok) throw new Error(data.error || "Lỗi hệ thống");
 
       alert(data.message);
-      
+
       // Cập nhật giao diện nội bộ (giảm điểm, thêm lịch sử)
       setUserPoints(prev => prev - selectedReward.points);
-      
+
       const newRecord = {
         id: "temp_" + Date.now(),
         rewardName: selectedReward.name,
@@ -127,7 +127,7 @@ export default function RewardStorePage() {
         createdAt: { seconds: Date.now() / 1000 }
       };
       setHistory(prev => [newRecord, ...prev]);
-      
+
       setSelectedReward(null);
     } catch (error: any) {
       alert(error.message);
@@ -164,7 +164,7 @@ export default function RewardStorePage() {
 
       <main className="flex-1 -mt-10 mb-16 px-4 md:px-6">
         <div className="container mx-auto max-w-5xl">
-          
+
           <div className="flex justify-end mb-6">
             <Link href="/the-gemini-elite" className="text-white hover:text-blue-100 flex items-center gap-2 font-medium transition-colors">
               Đến Bảng Vàng <ArrowRight className="w-4 h-4" />
@@ -178,7 +178,7 @@ export default function RewardStorePage() {
                 <div className="absolute top-0 right-0 p-2 opacity-5 text-slate-900 group-hover:opacity-10 transition-opacity">
                   <Gift className="w-24 h-24 -mr-6 -mt-6" />
                 </div>
-                
+
                 <div>
                   <div className="inline-block px-2 py-1 bg-red-50 text-red-600 text-[10px] font-black uppercase tracking-wider rounded mb-3">
                     {reward.limit}
@@ -189,14 +189,13 @@ export default function RewardStorePage() {
                   </div>
                 </div>
 
-                <button 
+                <button
                   onClick={() => handleRedeemClick(reward)}
                   disabled={userPoints < reward.points}
-                  className={`w-full py-2.5 rounded-xl font-bold transition-colors ${
-                    userPoints >= reward.points
+                  className={`w-full py-2.5 rounded-xl font-bold transition-colors ${userPoints >= reward.points
                       ? "bg-[#4285F4] text-white hover:bg-blue-600 shadow-md shadow-blue-200"
                       : "bg-slate-100 text-slate-400 cursor-not-allowed"
-                  }`}
+                    }`}
                 >
                   {userPoints >= reward.points ? "Đổi Quà" : "Chưa đủ điểm"}
                 </button>
@@ -261,7 +260,7 @@ export default function RewardStorePage() {
             <p className="text-slate-500 mb-6 border-b border-slate-100 pb-4">
               Bạn đang dùng <span className="font-bold text-[#4285F4]">{selectedReward.points} điểm</span> để đổi <span className="font-bold text-slate-800">{selectedReward.name}</span>.
             </p>
-            
+
             <form onSubmit={submitRedemption}>
               {selectedReward.type === 'physical' && (
                 <div className="space-y-4 mb-6">
@@ -271,41 +270,41 @@ export default function RewardStorePage() {
                   </div>
                   <div>
                     <label className="block text-sm font-bold text-slate-700 mb-1">Số điện thoại liên hệ <span className="text-red-500">*</span></label>
-                    <input 
-                      type="tel" 
+                    <input
+                      type="tel"
                       required
                       value={phone}
                       onChange={e => setPhone(e.target.value)}
-                      className="w-full border border-slate-300 rounded-xl p-3 focus:outline-none focus:ring-2 focus:ring-[#4285F4]/50" 
-                      placeholder="VD: 0987654321" 
+                      className="w-full border border-slate-300 rounded-xl p-3 focus:outline-none focus:ring-2 focus:ring-[#4285F4]/50"
+                      placeholder="VD: 0987654321"
                     />
                   </div>
                   <div>
                     <label className="block text-sm font-bold text-slate-700 mb-1">Địa chỉ nhận quà cụ thể <span className="text-red-500">*</span></label>
-                    <textarea 
+                    <textarea
                       required
                       value={address}
                       onChange={e => setAddress(e.target.value)}
-                      className="w-full border border-slate-300 rounded-xl p-3 focus:outline-none focus:ring-2 focus:ring-[#4285F4]/50 min-h-[80px]" 
-                      placeholder="Số nhà, Đường, Phường/Xã, Quận/Huyện, Tỉnh/Thành phố" 
+                      className="w-full border border-slate-300 rounded-xl p-3 focus:outline-none focus:ring-2 focus:ring-[#4285F4]/50 min-h-[80px]"
+                      placeholder="Số nhà, Đường, Phường/Xã, Quận/Huyện, Tỉnh/Thành phố"
                     />
                   </div>
                 </div>
               )}
-              
+
               {formError && <p className="text-red-500 text-sm font-medium mb-4">{formError}</p>}
-              
+
               <div className="flex gap-3 pt-2">
-                <button 
-                  type="button" 
+                <button
+                  type="button"
                   onClick={() => setSelectedReward(null)}
                   disabled={isRedeeming}
                   className="flex-1 py-3 px-4 rounded-xl font-bold text-slate-600 bg-slate-100 hover:bg-slate-200 transition-colors"
                 >
                   Hủy
                 </button>
-                <button 
-                  type="submit" 
+                <button
+                  type="submit"
                   disabled={isRedeeming}
                   className="flex-1 py-3 px-4 rounded-xl font-bold text-white bg-[#4285F4] hover:bg-blue-600 transition-colors shadow-md shadow-blue-200 disabled:opacity-70 flex justify-center items-center"
                 >

@@ -5,7 +5,7 @@ import { collection, query, orderBy, limit, getDocs } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
-import { Trophy, Star, Medal, Users, Sparkles } from "lucide-react";
+import { Trophy, Star, Medal, Users, Sparkles, Gift } from "lucide-react";
 
 export default function TheGeminiElitePage() {
   const [topUsers, setTopUsers] = useState<any[]>([]);
@@ -131,9 +131,15 @@ export default function TheGeminiElitePage() {
               
               {/* Top 5 Leaderboard */}
               <div className="bg-white rounded-3xl p-6 md:p-10 shadow-xl border border-slate-100">
-                <div className="flex items-center gap-3 mb-8">
-                  <Trophy className="w-8 h-8 text-amber-500" />
-                  <h2 className="text-2xl font-bold text-slate-800">Top 5 Học Giả Xuất Sắc Nhất</h2>
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
+                  <div className="flex items-center gap-3">
+                    <Trophy className="w-8 h-8 text-amber-500" />
+                    <h2 className="text-2xl font-bold text-slate-800">Top 5 Học Giả Xuất Sắc Nhất</h2>
+                  </div>
+                  <div className="inline-flex items-center gap-2 bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 text-amber-700 px-4 py-2 rounded-full text-sm font-bold shadow-sm">
+                    <Gift className="w-4 h-4 text-amber-500" />
+                    Top 5 mỗi tháng nhận quà đặc biệt từ BTC!
+                  </div>
                 </div>
                 
                 {topUsers.length === 0 ? (
