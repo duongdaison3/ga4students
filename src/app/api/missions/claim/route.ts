@@ -35,10 +35,21 @@ export async function POST(req: Request) {
       for (const uid of targetUserIds) {
         try {
           await adminDb.runTransaction(async (transaction) => {
+            // --- ALL READS MUST COME FIRST ---
             const missionId = `${uid}_${eventId}_attendance`;
             const missionRef = adminDb.collection("user_missions").doc(missionId);
             const missionDoc = await transaction.get(missionRef);
             
+            const userRef = adminDb.collection("users").doc(uid);
+            const userDoc = await transaction.get(userRef);
+            
+            const regQuery = adminDb.collection("registrations")
+              .where("userId", "==", uid)
+              .where("eventId", "==", eventId)
+              .limit(1);
+            const regSnapshot = await transaction.get(regQuery);
+            
+            // --- ALL WRITES MUST COME AFTER READS ---
             if (missionDoc.exists) {
               alreadyClaimedCount++;
               return; // skip if already claimed
@@ -52,18 +63,10 @@ export async function POST(req: Request) {
               createdAt: new Date()
             });
 
-            const userRef = adminDb.collection("users").doc(uid);
-            const userDoc = await transaction.get(userRef);
             if (userDoc.exists) {
               const currentPoints = userDoc.data()?.totalPoints || 0;
               transaction.update(userRef, { totalPoints: currentPoints + 100 });
             }
-
-            const regSnapshot = await adminDb.collection("registrations")
-              .where("userId", "==", uid)
-              .where("eventId", "==", eventId)
-              .limit(1)
-              .get();
             
             if (!regSnapshot.empty) {
               transaction.update(regSnapshot.docs[0].ref, { attended: true });
@@ -108,9 +111,28 @@ export async function POST(req: Request) {
 
     // Use a transaction to ensure points are only awarded once
     await adminDb.runTransaction(async (transaction) => {
+      // --- ALL READS MUST COME FIRST ---
       const missionDoc = await transaction.get(missionRef);
+      
+      const userRef = adminDb.collection("users").doc(uidToReward);
+      const userDoc = await transaction.get(userRef);
+      
+      let regSnapshot;
+      if (missionType === "attendance") {
+        const regQuery = adminDb.collection("registrations")
+          .where("userId", "==", uidToReward)
+          .where("eventId", "==", eventId)
+          .limit(1);
+        regSnapshot = await transaction.get(regQuery);
+      }
+
+      // --- ALL WRITES MUST COME AFTER READS ---
       if (missionDoc.exists) {
         throw new Error("ALREADY_CLAIMED");
+      }
+      
+      if (!userDoc.exists) {
+        throw new Error("USER_NOT_FOUND");
       }
 
       // Record the mission
@@ -123,31 +145,13 @@ export async function POST(req: Request) {
       });
 
       // Update user points
-      const userRef = adminDb.collection("users").doc(uidToReward);
-      const userDoc = await transaction.get(userRef);
-      
-      let newTotal = points;
-      if (userDoc.exists) {
-        const currentPoints = userDoc.data()?.totalPoints || 0;
-        newTotal = currentPoints + points;
-        transaction.update(userRef, { totalPoints: newTotal });
-      } else {
-        // Fallback if user document somehow doesn't exist but they are trying to claim
-        throw new Error("USER_NOT_FOUND");
-      }
+      const currentPoints = userDoc.data()?.totalPoints || 0;
+      const newTotal = currentPoints + points;
+      transaction.update(userRef, { totalPoints: newTotal });
       
       // If attendance, also update the registration status
-      if (missionType === "attendance") {
-        // find registration doc
-        const regSnapshot = await adminDb.collection("registrations")
-          .where("userId", "==", uidToReward)
-          .where("eventId", "==", eventId)
-          .limit(1)
-          .get();
-        
-        if (!regSnapshot.empty) {
-          transaction.update(regSnapshot.docs[0].ref, { attended: true });
-        }
+      if (missionType === "attendance" && regSnapshot && !regSnapshot.empty) {
+        transaction.update(regSnapshot.docs[0].ref, { attended: true });
       }
     });
 
