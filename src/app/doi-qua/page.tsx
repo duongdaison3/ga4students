@@ -11,10 +11,10 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 
 const REWARDS = [
-  { id: "gemini_pro_3m", name: "Gemini Pro 3 tháng", points: 2000, type: "digital", limit: "Số lượng có hạn" },
-  { id: "gemini_pro_1m", name: "Gemini Pro 1 tháng", points: 1500, type: "digital", limit: "Số lượng có hạn" },
-  { id: "canva_pro_1m", name: "Canva Pro 1 tháng", points: 1200, type: "digital", limit: "Số lượng có hạn" },
-  { id: "digital_random", name: "Bộ quà tặng Digital ngẫu nhiên", points: 1000, type: "digital", limit: "Số lượng có hạn" },
+  { id: "gemini_pro_3m", name: "Gemini Pro 3 tháng", points: 2500, type: "digital", limit: "Số lượng có hạn" },
+  { id: "gemini_pro_1m", name: "Gemini Pro 1 tháng", points: 2000, type: "digital", limit: "Số lượng có hạn" },
+  { id: "canva_pro_1m", name: "Canva Pro 1 tháng", points: 1500, type: "digital", limit: "Số lượng có hạn" },
+  { id: "digital_random", name: "Bộ quà tặng Digital ngẫu nhiên", points: 1200, type: "digital", limit: "Số lượng có hạn" },
   { id: "phys_combo", name: "Bộ quà tặng: bút, móc khóa Google", points: 650, type: "physical", limit: "Số lượng có hạn" },
   { id: "phys_keychain", name: "Móc khóa Google", points: 350, type: "physical", limit: "Số lượng có hạn" },
   { id: "phys_pen", name: "Bút bi Google", points: 350, type: "physical", limit: "Số lượng có hạn" },
@@ -171,6 +171,47 @@ export default function RewardStorePage() {
             </Link>
           </div>
 
+          {/* Nhiệm vụ kiếm điểm */}
+          <div className="bg-white rounded-3xl p-6 md:p-8 shadow-sm border border-slate-200 mb-8 relative z-10">
+            <div className="flex items-center gap-3 mb-6">
+              <CheckCircle className="w-6 h-6 text-green-500" />
+              <h2 className="text-2xl font-bold text-slate-800">Làm sao để kiếm điểm thưởng?</h2>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="flex items-start gap-4 p-4 rounded-xl bg-slate-50 border border-slate-100">
+                <div className="flex-shrink-0 w-10 h-10 bg-green-100 text-green-600 rounded-full flex items-center justify-center font-bold">+50</div>
+                <div>
+                  <h3 className="font-bold text-slate-800">Đăng ký tài khoản</h3>
+                  <p className="text-sm text-slate-500">Tự động nhận 1 lần duy nhất khi tạo tài khoản trên hệ thống.</p>
+                </div>
+              </div>
+              <div className="flex items-start gap-4 p-4 rounded-xl bg-slate-50 border border-slate-100">
+                <div className="flex-shrink-0 w-10 h-10 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center font-bold">+10</div>
+                <div>
+                  <h3 className="font-bold text-slate-800">Đăng ký sự kiện mới</h3>
+                  <p className="text-sm text-slate-500">Tự động nhận khi bấm đăng ký tham gia mỗi sự kiện.</p>
+                </div>
+              </div>
+              <div className="flex items-start gap-4 p-4 rounded-xl bg-amber-50 border border-amber-100 md:col-span-2">
+                <div className="flex-shrink-0 w-10 h-10 bg-amber-200 text-amber-700 rounded-full flex items-center justify-center font-bold text-xs uppercase tracking-tighter">Bonus</div>
+                <div>
+                  <h3 className="font-bold text-amber-900">Hoàn thành nhiệm vụ sự kiện (Tới +250đ/sự kiện)</h3>
+                  <p className="text-sm text-amber-700 mt-1">
+                    <strong>Lưu ý quan trọng:</strong> Bạn có thể kiếm thêm rất nhiều điểm thưởng bằng cách quay lại trang Sự kiện đã đăng ký và làm các nhiệm vụ: Điểm danh (100đ), Chia sẻ sự kiện (100đ), Thực hành Prompt (50đ)...
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-start gap-4 p-4 rounded-xl bg-slate-50 border border-slate-100 md:col-span-2">
+                <div className="flex-shrink-0 w-10 h-10 bg-purple-100 text-purple-600 rounded-full flex items-center justify-center font-bold">+20</div>
+                <div>
+                  <h3 className="font-bold text-slate-800">Nhận Giấy chứng nhận từ Google</h3>
+                  <p className="text-sm text-slate-500">Nhận 20 điểm cho mỗi Giấy chứng nhận hoàn thành khoá học của Google (Liên hệ BTC để được cộng điểm).</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
           {/* Grid Quà tặng */}
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 mb-16 relative z-10">
             {REWARDS.map((reward) => (
@@ -193,8 +234,8 @@ export default function RewardStorePage() {
                   onClick={() => handleRedeemClick(reward)}
                   disabled={userPoints < reward.points}
                   className={`w-full py-2.5 rounded-xl font-bold transition-colors ${userPoints >= reward.points
-                      ? "bg-[#4285F4] text-white hover:bg-blue-600 shadow-md shadow-blue-200"
-                      : "bg-slate-100 text-slate-400 cursor-not-allowed"
+                    ? "bg-[#4285F4] text-white hover:bg-blue-600 shadow-md shadow-blue-200"
+                    : "bg-slate-100 text-slate-400 cursor-not-allowed"
                     }`}
                 >
                   {userPoints >= reward.points ? "Đổi Quà" : "Chưa đủ điểm"}

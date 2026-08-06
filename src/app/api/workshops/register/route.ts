@@ -47,9 +47,23 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Bạn đã đăng ký tham gia buổi học này rồi." }, { status: 400 });
     }
 
-    // 5. Update user's registered workshops in Firestore
+    // 5. Update user's registered workshops and add 10 points in Firestore
     registeredWorkshops.push(workshopId);
-    await userRef.set({ registeredWorkshops }, { merge: true });
+    const currentPoints = userDoc.exists ? (userDoc.data()?.totalPoints || 0) : 0;
+    
+    await userRef.set({ 
+      registeredWorkshops,
+      totalPoints: currentPoints + 10
+    }, { merge: true });
+
+    // 5a. Record mission
+    await adminDb.collection("user_missions").doc(`${uid}_${workshopId}_register_event`).set({
+      userId: uid,
+      eventId: workshopId,
+      missionType: "register_event",
+      points: 10,
+      createdAt: new Date()
+    });
 
     // 5b. Save to registrations collection for admin dashboard
     await adminDb.collection("registrations").add({

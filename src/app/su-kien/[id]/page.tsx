@@ -100,7 +100,7 @@ export default function EventDetailsPage() {
         throw new Error(data.error || "Đăng ký thất bại");
       }
 
-      alert("Đăng ký sự kiện thành công! Vui lòng kiểm tra email xác nhận của bạn.");
+      alert("🎉 Đăng ký sự kiện thành công! Bạn đã được cộng +10 điểm.\n\nVui lòng kéo xuống phần 'Nhiệm vụ The Gemini Elite' bên dưới để làm nhiệm vụ và kiếm thêm điểm thưởng nhé!");
       setIsRegistered(true);
     } catch (error: any) {
       alert(error.message);
@@ -331,9 +331,10 @@ export default function EventDetailsPage() {
                 <Sparkles className="w-8 h-8 text-amber-500" />
                 <h2 className="text-2xl font-bold text-slate-800">Nhiệm vụ The Gemini Elite</h2>
               </div>
-              <p className="text-slate-600 mb-8">
-                Hoàn thành các nhiệm vụ dưới đây để tích lũy điểm thưởng và lọt vào Bảng Vàng <strong>The Gemini Elite</strong>!
-              </p>
+              
+              <div className="bg-amber-50 border border-amber-200 text-amber-800 p-4 rounded-xl mb-6 text-sm">
+                <strong>💡 Mẹo kiếm điểm:</strong> Đăng ký thành công bạn đã có <strong>+10đ</strong>. Hãy hoàn thành các nhiệm vụ bên dưới để tích lũy thêm tới <strong>+250đ</strong> cho sự kiện này và lọt vào Bảng Vàng nhé!
+              </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {/* Nhiệm vụ 1: Điểm danh */}

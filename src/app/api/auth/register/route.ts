@@ -49,7 +49,17 @@ export async function POST(req: Request) {
       phone,
       university,
       createdAt: new Date(),
-      role: "student"
+      role: "student",
+      totalPoints: 50 // Thưởng 50 điểm khi đăng ký
+    });
+
+    // 4b. Record mission
+    await adminDb.collection("user_missions").doc(`${userRecord.uid}_register`).set({
+      userId: userRecord.uid,
+      eventId: "system",
+      missionType: "register",
+      points: 50,
+      createdAt: new Date()
     });
 
     // 5. Send account activation email with password setup link
