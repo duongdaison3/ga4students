@@ -26,14 +26,19 @@ export default function EventDetailsPage() {
   const [recapStep, setRecapStep] = useState(0);
 
   useEffect(() => {
+    let userUnsubscribe: (() => void) | undefined;
+    
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
       setUser(currentUser);
       if (currentUser && id) {
-        const userDoc = await getDoc(doc(db, "users", currentUser.uid));
-        if (userDoc.exists()) {
-          const registered = userDoc.data().registeredWorkshops || [];
-          setIsRegistered(registered.includes(id as string));
-        }
+        // Listen to user document in real-time
+        const { doc, onSnapshot } = await import("firebase/firestore");
+        userUnsubscribe = onSnapshot(doc(db, "users", currentUser.uid), (userDoc) => {
+          if (userDoc.exists()) {
+            const registered = userDoc.data().registeredWorkshops || [];
+            setIsRegistered(registered.includes(id as string));
+          }
+        });
 
         // Fetch claimed missions
         const { collection, query, where, getDocs } = await import("firebase/firestore");
@@ -44,6 +49,8 @@ export default function EventDetailsPage() {
         );
         const snap = await getDocs(q);
         setClaimedMissions(snap.docs.map(d => d.data().missionType));
+      } else {
+        if (userUnsubscribe) userUnsubscribe();
       }
     });
 
@@ -67,7 +74,10 @@ export default function EventDetailsPage() {
       fetchEvent();
     }
 
-    return () => unsubscribe();
+    return () => {
+      unsubscribe();
+      if (userUnsubscribe) userUnsubscribe();
+    };
   }, [id]);
 
   const handleRegister = async () => {

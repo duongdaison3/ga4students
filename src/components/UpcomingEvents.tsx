@@ -16,15 +16,20 @@ export function UpcomingEvents() {
   const [registeredWorkshops, setRegisteredWorkshops] = useState<string[]>([]);
 
   useEffect(() => {
+    let userUnsubscribe: (() => void) | undefined;
+    
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
       setUser(currentUser);
       if (currentUser) {
-        const userDoc = await getDocs(query(collection(db, "users"), where("__name__", "==", currentUser.uid)));
-        if (!userDoc.empty) {
-          setRegisteredWorkshops(userDoc.docs[0].data().registeredWorkshops || []);
-        }
+        const { doc, onSnapshot } = await import("firebase/firestore");
+        userUnsubscribe = onSnapshot(doc(db, "users", currentUser.uid), (userDoc) => {
+          if (userDoc.exists()) {
+            setRegisteredWorkshops(userDoc.data().registeredWorkshops || []);
+          }
+        });
       } else {
         setRegisteredWorkshops([]);
+        if (userUnsubscribe) userUnsubscribe();
       }
     });
 
@@ -44,7 +49,10 @@ export function UpcomingEvents() {
 
     fetchEvents();
 
-    return () => unsubscribe();
+    return () => {
+      unsubscribe();
+      if (userUnsubscribe) userUnsubscribe();
+    };
   }, []);
 
   const handleRegisterEvent = async (eventId: string, eventTitle: string) => {
