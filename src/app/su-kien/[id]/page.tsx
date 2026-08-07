@@ -314,17 +314,15 @@ export default function EventDetailsPage() {
               </p>
 
               {user ? (
-                <><button
-                  onClick={handleRegister}
-                  disabled={processing || isRegistered} /><div className="flex flex-col items-center">
-                    <button
-                      onClick={handleRegister}
-                      disabled={processing}
-                      className="bg-white text-[#4285F4] font-bold py-4 px-10 rounded-full transition-all duration-300 transform hover:scale-105 shadow-lg flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      {isRegistered ? 'Bạn đã đăng ký' : processing ? 'Đang xử lý...' : 'Đăng ký giữ chỗ ngay'}
-                      {!isRegistered && !processing && <ArrowRight className="w-5 h-5" />}
-                    </button>
+                <div className="flex flex-col items-center">
+                  <button
+                    onClick={handleRegister}
+                    disabled={processing || isRegistered}
+                    className={`inline-flex items-center justify-center gap-2 py-4 px-8 rounded-full font-bold text-lg transition-all ${isRegistered ? 'bg-slate-100 text-slate-500 cursor-not-allowed shadow-none border border-slate-200' : processing ? 'bg-blue-300 text-white cursor-not-allowed' : 'bg-white text-[#4285F4] hover:bg-slate-50 hover:shadow-lg'}`}
+                  >
+                    {isRegistered ? 'Bạn đã đăng ký' : processing ? 'Đang xử lý...' : 'Đăng ký giữ chỗ ngay'}
+                    {!isRegistered && !processing && <ArrowRight className="h-5 w-5" />}
+                  </button>
                     {debugData && (
                       <div className="mt-4 p-4 bg-red-100 text-red-800 text-xs text-left w-full max-w-md overflow-auto">
                         <strong>DEBUG INFO:</strong><br />
@@ -334,7 +332,7 @@ export default function EventDetailsPage() {
                         Doc: {JSON.stringify(debugData, null, 2)}
                       </div>
                     )}
-                  </div></>
+                </div>
               ) : (
                 <button
                   onClick={() => router.push('/dang-nhap')}
