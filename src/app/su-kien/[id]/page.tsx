@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { doc, getDoc } from "firebase/firestore";
+import { doc, getDoc, onSnapshot, collection, query, where, getDocs } from "firebase/firestore";
 import { db, auth } from "@/lib/firebase";
 import { onAuthStateChanged, User } from "firebase/auth";
 import { Navbar } from "@/components/Navbar";
@@ -31,8 +31,6 @@ export default function EventDetailsPage() {
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
       setUser(currentUser);
       if (currentUser && id) {
-        // Listen to user document in real-time
-        const { doc, onSnapshot } = await import("firebase/firestore");
         userUnsubscribe = onSnapshot(doc(db, "users", currentUser.uid), (userDoc) => {
           if (userDoc.exists()) {
             const registered = userDoc.data().registeredWorkshops || [];
@@ -41,7 +39,6 @@ export default function EventDetailsPage() {
         });
 
         // Fetch claimed missions
-        const { collection, query, where, getDocs } = await import("firebase/firestore");
         const q = query(
           collection(db, "user_missions"), 
           where("userId", "==", currentUser.uid),

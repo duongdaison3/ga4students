@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { auth, db } from "@/lib/firebase";
 import { onAuthStateChanged, User } from "firebase/auth";
-import { collection, query, where, getDocs } from "firebase/firestore";
+import { collection, query, where, getDocs, doc, onSnapshot } from "firebase/firestore";
 import { Calendar, MapPin, Clock, ArrowRight, User as UserIcon, Video, ExternalLink, FileText } from "lucide-react";
 import Link from "next/link";
 import { getEventStatus } from "@/lib/utils";
@@ -21,7 +21,6 @@ export function UpcomingEvents() {
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
       setUser(currentUser);
       if (currentUser) {
-        const { doc, onSnapshot } = await import("firebase/firestore");
         userUnsubscribe = onSnapshot(doc(db, "users", currentUser.uid), (userDoc) => {
           if (userDoc.exists()) {
             setRegisteredWorkshops(userDoc.data().registeredWorkshops || []);
