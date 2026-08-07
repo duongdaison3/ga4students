@@ -20,7 +20,6 @@ export default function EventDetailsPage() {
   const [user, setUser] = useState<User | null>(null);
   const [processing, setProcessing] = useState(false);
   const [isRegistered, setIsRegistered] = useState(false);
-  const [debugData, setDebugData] = useState<any>(null);
   const [claimedMissions, setClaimedMissions] = useState<string[]>([]);
   const [missionLoading, setMissionLoading] = useState<string | null>(null);
   const [shareStep, setShareStep] = useState(0);
@@ -34,12 +33,8 @@ export default function EventDetailsPage() {
       if (currentUser && id) {
         userUnsubscribe = onSnapshot(doc(db, "users", currentUser.uid), (userDoc) => {
           if (userDoc.exists()) {
-            const data = userDoc.data();
-            setDebugData(data);
-            const registered = data.registeredWorkshops || [];
+            const registered = userDoc.data().registeredWorkshops || [];
             setIsRegistered(registered.includes(id as string));
-          } else {
-            setDebugData("User doc does not exist");
           }
         });
 
@@ -314,7 +309,7 @@ export default function EventDetailsPage() {
               </p>
 
               {user ? (
-                <div className="flex flex-col items-center">
+                <div className="flex justify-center">
                   <button
                     onClick={handleRegister}
                     disabled={processing || isRegistered}
@@ -323,15 +318,6 @@ export default function EventDetailsPage() {
                     {isRegistered ? 'Bạn đã đăng ký' : processing ? 'Đang xử lý...' : 'Đăng ký giữ chỗ ngay'}
                     {!isRegistered && !processing && <ArrowRight className="h-5 w-5" />}
                   </button>
-                    {debugData && (
-                      <div className="mt-4 p-4 bg-red-100 text-red-800 text-xs text-left w-full max-w-md overflow-auto">
-                        <strong>DEBUG INFO:</strong><br />
-                        ID: {id as string}<br />
-                        isRegistered State: {String(isRegistered)}<br />
-                        Auth UID: {user?.uid}<br />
-                        Doc: {JSON.stringify(debugData, null, 2)}
-                      </div>
-                    )}
                 </div>
               ) : (
                 <button
