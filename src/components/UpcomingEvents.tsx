@@ -75,10 +75,18 @@ export function UpcomingEvents() {
       }
 
       if (!response.ok) {
+        if (data.error === "Bạn đã đăng ký tham gia buổi học này rồi.") {
+          setRegisteredWorkshops((prev) => {
+            if (!prev.includes(eventId)) {
+              return [...prev, eventId];
+            }
+            return prev;
+          });
+        }
         throw new Error(data.error || "Đăng ký thất bại");
       }
 
-      alert("Đăng ký sự kiện thành công! Vui lòng kiểm tra email xác nhận của bạn.");
+      alert("🎉 Đăng ký sự kiện thành công! Bạn đã được cộng +10 điểm.");
       setRegisteredWorkshops((prev) => [...prev, eventId]);
     } catch (error: any) {
       alert(error.message);

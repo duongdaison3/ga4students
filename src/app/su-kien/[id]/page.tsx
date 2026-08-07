@@ -97,6 +97,9 @@ export default function EventDetailsPage() {
       }
 
       if (!response.ok) {
+        if (data.error === "Bạn đã đăng ký tham gia buổi học này rồi.") {
+          setIsRegistered(true);
+        }
         throw new Error(data.error || "Đăng ký thất bại");
       }
 
