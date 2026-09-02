@@ -25,6 +25,18 @@ const SPEAKERS = [
       { text: "Media & Communications Team Member, VSAC", icon: Briefcase, colorClass: "text-[#34A853]", bgClass: "bg-green-100" },
       { text: "Top 25 Đại sứ Sinh viên Google", icon: BookOpen, colorClass: "text-[#FBBC05]", bgClass: "bg-yellow-100" }
     ]
+  },
+  {
+    id: 3,
+    name: "Trần Danh Hiếu",
+    title: "Mentor GSA Mùa 2",
+    image: "/danhhieu.jpeg",
+    bio: "Apply GSA mùa 2 ngay, thay đổi bản thân chỉ trong 6 tháng! Mình là Hiếu, một trong những mentor của chương trình. Mình sẽ đồng hành cùng các bạn trong suốt quá trình học tập và phát triển kỹ năng, giúp các bạn đạt được mục tiêu cá nhân và nghề nghiệp.",
+    achievements: [
+      { text: "Top 5 Đại sứ Sinh viên Google", icon: Award, colorClass: "text-[#4285F4]", bgClass: "bg-blue-100" },
+      { text: "GSA Trainer", icon: Briefcase, colorClass: "text-[#34A853]", bgClass: "bg-green-100" },
+      { text: "Mentor Chương trình GSA Mùa 2", icon: BookOpen, colorClass: "text-[#FBBC05]", bgClass: "bg-yellow-100" }
+    ]
   }
 ];
 
