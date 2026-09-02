@@ -35,6 +35,8 @@ export default function AdminEvents() {
     location: "Microsoft Team",
     meetingLink: "",
     status: "opening", // fallback for older code, can be ignored
+    speakerIds: [] as string[],
+    speakerNames: [] as string[],
     speakerId: "",
     speakerName: "",
     slideLink: "",
@@ -113,7 +115,7 @@ export default function AdminEvents() {
       setFormData({
         title: "", topic: TOPICS[0], description: "", mainContent: "",
         date: "", time: "", type: "Online", location: "Microsoft Teams", meetingLink: "", status: "opening",
-        speakerId: "", speakerName: "", slideLink: "", recordLink: ""
+        speakerIds: [], speakerNames: [], speakerId: "", speakerName: "", slideLink: "", recordLink: ""
       });
       setEditEventId(null);
     } catch (error) {
@@ -151,8 +153,10 @@ export default function AdminEvents() {
       location: event.location || "",
       meetingLink: event.meetingLink || "",
       status: event.status || "opening",
-      speakerId: event.speakerId || "",
-      speakerName: event.speakerName || "",
+      speakerIds: event.speakerIds || (event.speakerId ? [event.speakerId] : []),
+      speakerNames: event.speakerNames || (event.speakerName ? [event.speakerName] : []),
+      speakerId: event.speakerId || event.speakerIds?.[0] || "",
+      speakerName: event.speakerName || event.speakerNames?.[0] || "",
       slideLink: event.slideLink || "",
       recordLink: event.recordLink || ""
     });
@@ -169,7 +173,7 @@ export default function AdminEvents() {
             setFormData({
               title: "", topic: TOPICS[0], description: "", mainContent: "",
               date: "", time: "", type: "Online", location: "Microsoft Teams", meetingLink: "", status: "opening",
-              speakerId: "", speakerName: "", slideLink: "", recordLink: ""
+              speakerIds: [], speakerNames: [], speakerId: "", speakerName: "", slideLink: "", recordLink: ""
             });
             setEditEventId(null);
             setIsModalOpen(true);
@@ -312,18 +316,21 @@ export default function AdminEvents() {
                 <div className="space-y-2">
                   <label className="text-sm font-medium text-slate-700">Giảng viên phụ trách</label>
                   <select
-                    value={formData.speakerId}
+                    multiple
+                    value={formData.speakerIds}
                     onChange={e => {
-                      const selectedSpeaker = speakers.find(s => s.id === e.target.value);
+                      const selectedIds = Array.from(e.target.selectedOptions, option => option.value);
+                      const selectedSpeakers = speakers.filter(s => selectedIds.includes(s.id));
                       setFormData({
                         ...formData,
-                        speakerId: e.target.value,
-                        speakerName: selectedSpeaker ? selectedSpeaker.fullName : ""
+                        speakerIds: selectedIds,
+                        speakerNames: selectedSpeakers.map(s => s.fullName),
+                        speakerId: selectedIds[0] || "",
+                        speakerName: selectedSpeakers[0]?.fullName || ""
                       });
                     }}
-                    className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-[#4285F4] focus:outline-none"
+                    className="w-full min-h-28 px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-[#4285F4] focus:outline-none"
                   >
-                    <option value="">-- Chọn Giảng viên --</option>
                     {speakers.map(s => <option key={s.id} value={s.id}>{s.fullName}</option>)}
                   </select>
                 </div>

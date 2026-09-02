@@ -235,6 +235,8 @@ export default function EventDetailsPage() {
     );
   }
 
+  const eventSpeakerNames = event.speakerNames || (event.speakerName ? [event.speakerName] : []);
+
   return (
     <div className="flex flex-col min-h-screen bg-slate-50">
       <Navbar />
@@ -258,7 +260,7 @@ export default function EventDetailsPage() {
               {event.description}
             </p>
 
-            <div className={`grid grid-cols-2 ${event.speakerName ? 'md:grid-cols-4' : 'md:grid-cols-3'} gap-6 py-8 border-y border-slate-100 mb-10`}>
+            <div className={`grid grid-cols-2 ${eventSpeakerNames.length ? 'md:grid-cols-4' : 'md:grid-cols-3'} gap-6 py-8 border-y border-slate-100 mb-10`}>
               <div className="flex flex-col gap-2">
                 <div className="flex items-center text-slate-500 gap-2 font-medium">
                   <Calendar className="w-5 h-5 text-[#4285F4]" /> Ngày tổ chức
@@ -279,13 +281,13 @@ export default function EventDetailsPage() {
                   {event.type === 'Offline' ? event.location : 'Online'}
                 </div>
               </div>
-              {event.speakerName && (
+              {eventSpeakerNames.length > 0 && (
                 <div className="flex flex-col gap-2">
                   <div className="flex items-center text-slate-500 gap-2 font-medium">
                     <UserIcon className="w-5 h-5 text-orange-500" /> Giảng viên
                   </div>
                   <div className="text-lg font-bold text-slate-800">
-                    {event.speakerName}
+                    {eventSpeakerNames.join(", ")}
                   </div>
                 </div>
               )}

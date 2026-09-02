@@ -164,14 +164,14 @@ export function UpcomingEvents() {
             </div>
           </div>
           
-          {event.speakerName && (
+          {(event.speakerNames?.length > 0 || event.speakerName) && (
             <div className="flex items-center text-slate-700">
               <div className={`h-10 w-10 rounded-full flex items-center justify-center mr-4 ${isPast ? 'bg-slate-100' : 'bg-orange-50'}`}>
                 <UserIcon className={`h-5 w-5 ${isPast ? 'text-slate-500' : 'text-orange-500'}`} />
               </div>
               <div>
                 <div className="text-xs text-slate-500 font-medium">Giảng viên</div>
-                <div className="font-bold">{event.speakerName}</div>
+                <div className="font-bold">{event.speakerNames?.join(", ") || event.speakerName}</div>
               </div>
             </div>
           )}
