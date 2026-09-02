@@ -109,7 +109,14 @@ export const sendPersonalizedMarketingEmail = async (
 ) => {
   const promises = recipients.map(async (recipient) => {
     // Replace {{name}} with the recipient's name
-    const personalizedHtml = htmlContent.replace(/{{name}}/g, recipient.name);
+    const personalizedHtml = htmlContent
+      .replace(/{{name}}/g, recipient.name)
+      .replace(/class="ql-align-center"/g, 'style="text-align:center;"')
+      .replace(/class="ql-align-right"/g, 'style="text-align:right;"')
+      .replace(/class="ql-align-justify"/g, 'style="text-align:justify;"')
+      .replace(/class="ql-size-small"/g, 'style="font-size:0.75em;"')
+      .replace(/class="ql-size-large"/g, 'style="font-size:1.5em;"')
+      .replace(/class="ql-size-huge"/g, 'style="font-size:2em;"');
 
     const mailOptions = {
       from: `"Gemini Academy" <${senderAddress}>`,

@@ -330,6 +330,7 @@ export default function MarketingPage() {
               <RichTextEditor
                 value={content}
                 onChange={setContent}
+                emailMode
                 placeholder="Soạn nội dung email... (Ví dụ: Xin chào {{name}})"
               />
             </div>

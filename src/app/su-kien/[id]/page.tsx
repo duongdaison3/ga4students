@@ -296,7 +296,7 @@ export default function EventDetailsPage() {
             {/* Rich Text Content */}
             {event.mainContent && (
               <div
-                className="prose prose-slate prose-lg max-w-none"
+                className="prose prose-slate prose-lg max-w-none [&_table]:w-full [&_table]:border-collapse [&_td]:border [&_td]:border-slate-400 [&_td]:p-2 [&_th]:border [&_th]:border-slate-400 [&_th]:p-2 [&_img]:max-w-full [&_img]:h-auto [&_.ql-align-center]:text-center [&_.ql-align-right]:text-right [&_.ql-align-justify]:text-justify"
                 dangerouslySetInnerHTML={{ __html: event.mainContent.replace(/&nbsp;/g, ' ') }}
               />
             )}
