@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
 import { Analytics } from "@vercel/analytics/next"
+import { NotificationProvider } from "@/components/NotificationProvider";
 
 const inter = Inter({
   subsets: ["vietnamese"],
@@ -22,7 +23,7 @@ export default function RootLayout({
     <html lang="vi" className={`${inter.variable} h-full antialiased`}>
       <head />
       <body className="min-h-screen flex flex-col bg-white text-slate-800">
-        {children}
+        <NotificationProvider>{children}</NotificationProvider>
       </body>
     </html>
   );

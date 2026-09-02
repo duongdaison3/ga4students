@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { collection, getDocs, query, orderBy, doc, updateDoc } from "firebase/firestore";
 import { db, auth } from "@/lib/firebase";
 import { Search, Trash2, Download, Edit, Key, X } from "lucide-react";
+import { useNotification } from "@/components/NotificationProvider";
 
 export default function AdminUsers() {
   const [users, setUsers] = useState<any[]>([]);
@@ -20,6 +21,7 @@ export default function AdminUsers() {
 
   // Password Reset State
   const [isResetting, setIsResetting] = useState<string | null>(null);
+  const { notify, confirm } = useNotification();
 
   useEffect(() => {
     fetchUsers();
@@ -45,12 +47,12 @@ export default function AdminUsers() {
       setUsers(prev => prev.map(u => u.id === userId ? { ...u, role: newRole } : u));
     } catch (error) {
       console.error("Error updating role:", error);
-      alert("Lỗi khi cập nhật vai trò!");
+      notify("Lỗi khi cập nhật vai trò!", "error");
     }
   };
 
   const handleDeleteUser = async (userId: string) => {
-    if (!confirm("Bạn có chắc chắn muốn xóa người dùng này? Tài khoản và các dữ liệu đăng ký sự kiện liên quan sẽ bị xóa vĩnh viễn.")) {
+    if (!await confirm("Bạn có chắc chắn muốn xóa người dùng này? Tài khoản và các dữ liệu đăng ký sự kiện liên quan sẽ bị xóa vĩnh viễn.")) {
       return;
     }
 
@@ -74,10 +76,10 @@ export default function AdminUsers() {
       }
       
       setUsers(prev => prev.filter(u => u.id !== userId));
-      alert("Đã xóa người dùng thành công.");
+      notify("Đã xóa người dùng thành công.", "success");
     } catch (error: any) {
       console.error("Error deleting user:", error);
-      alert(error.message || "Đã xảy ra lỗi khi xóa người dùng.");
+      notify(error.message || "Đã xảy ra lỗi khi xóa người dùng.", "error");
     } finally {
       setIsDeleting(null);
     }
@@ -85,7 +87,7 @@ export default function AdminUsers() {
 
   const handleExportCSV = () => {
     if (filteredUsers.length === 0) {
-      alert("Không có dữ liệu để xuất.");
+      notify("Không có dữ liệu để xuất.");
       return;
     }
 
@@ -148,17 +150,17 @@ export default function AdminUsers() {
       if (!res.ok) throw new Error(data.error || "Lỗi cập nhật");
 
       setUsers(prev => prev.map(u => u.id === editingUser.id ? { ...u, ...editForm } : u));
-      alert("Cập nhật thông tin thành công!");
+      notify("Cập nhật thông tin thành công!", "success");
       setIsEditModalOpen(false);
     } catch (error: any) {
-      alert(error.message || "Lỗi khi cập nhật");
+      notify(error.message || "Lỗi khi cập nhật", "error");
     } finally {
       setIsSubmittingEdit(false);
     }
   };
 
   const handleResetPassword = async (user: any) => {
-    if (!confirm(`Bạn có chắc muốn gửi email đặt lại mật khẩu cho ${user.email}?`)) return;
+    if (!await confirm(`Bạn có chắc muốn gửi email đặt lại mật khẩu cho ${user.email}?`)) return;
     
     setIsResetting(user.id);
     try {
@@ -176,9 +178,9 @@ export default function AdminUsers() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Lỗi cấp lại mật khẩu");
 
-      alert("Đã gửi email cấp lại mật khẩu thành công!");
+      notify("Đã gửi email cấp lại mật khẩu thành công!", "success");
     } catch (error: any) {
-      alert(error.message || "Lỗi khi gửi email mật khẩu");
+      notify(error.message || "Lỗi khi gửi email mật khẩu", "error");
     } finally {
       setIsResetting(null);
     }

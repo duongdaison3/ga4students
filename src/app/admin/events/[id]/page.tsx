@@ -7,10 +7,12 @@ import { db } from "@/lib/firebase";
 import { ArrowLeft, Users, Download, FileText, Video, CheckCircle } from "lucide-react";
 import { getEventStatus } from "@/lib/utils";
 import Link from "next/link";
+import { useNotification } from "@/components/NotificationProvider";
 
 export default function EventDetails() {
   const { id } = useParams() as { id: string };
   const router = useRouter();
+  const { notify, confirm } = useNotification();
   
   const [event, setEvent] = useState<any>(null);
   const [registrations, setRegistrations] = useState<any[]>([]);
@@ -24,7 +26,7 @@ export default function EventDetails() {
         // Fetch event info
         const eventDoc = await getDoc(doc(db, "events", id));
         if (!eventDoc.exists()) {
-          alert("Sự kiện không tồn tại");
+          notify("Sự kiện không tồn tại", "error");
           router.push("/admin/events");
           return;
         }
@@ -75,7 +77,7 @@ export default function EventDetails() {
 
   const handleBatchAttendance = async () => {
     if (selectedUsers.size === 0) return;
-    if (!confirm(`Xác nhận điểm danh cho ${selectedUsers.size} sinh viên đã chọn? Hệ thống sẽ cộng 100 điểm cho mỗi người.`)) return;
+    if (!await confirm(`Xác nhận điểm danh cho ${selectedUsers.size} sinh viên đã chọn? Hệ thống sẽ cộng 100 điểm cho mỗi người.`)) return;
 
     setIsBatchAttending(true);
     try {
@@ -102,13 +104,13 @@ export default function EventDetails() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Lỗi điểm danh hàng loạt");
 
-      alert(data.message || "Điểm danh thành công!");
+      notify(data.message || "Điểm danh thành công!", "success");
       
       // Update local state
       setRegistrations(prev => prev.map(r => targetUserIds.includes(r.userId) ? { ...r, attended: true } : r));
       setSelectedUsers(new Set());
     } catch (error: any) {
-      alert(error.message || "Đã xảy ra lỗi");
+      notify(error.message || "Đã xảy ra lỗi", "error");
     } finally {
       setIsBatchAttending(false);
     }

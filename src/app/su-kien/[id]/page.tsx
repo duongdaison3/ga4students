@@ -10,10 +10,12 @@ import { Footer } from "@/components/Footer";
 import { Calendar, Clock, MapPin, ArrowLeft, ArrowRight, User as UserIcon, Share2, MessageCircle, Sparkles, CheckCircle } from "lucide-react";
 import { getEventStatus } from "@/lib/utils";
 import Link from "next/link";
+import { useNotification } from "@/components/NotificationProvider";
 
 export default function EventDetailsPage() {
   const { id } = useParams();
   const router = useRouter();
+  const { notify } = useNotification();
 
   const [event, setEvent] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -110,10 +112,10 @@ export default function EventDetailsPage() {
         throw new Error(data.error || "Đăng ký thất bại");
       }
 
-      alert("🎉 Đăng ký sự kiện thành công! Bạn đã được cộng +10 điểm.\n\nVui lòng kéo xuống phần 'Nhiệm vụ The Gemini Elite' bên dưới để làm nhiệm vụ và kiếm thêm điểm thưởng nhé!");
+      notify("Đăng ký sự kiện thành công! Bạn đã được cộng +10 điểm.\n\nVui lòng kéo xuống phần 'Nhiệm vụ The Gemini Elite' bên dưới để làm nhiệm vụ và kiếm thêm điểm thưởng nhé!", "success");
       setIsRegistered(true);
     } catch (error: any) {
-      alert(error.message);
+      notify(error.message, "error");
     } finally {
       setProcessing(false);
     }
@@ -125,12 +127,12 @@ export default function EventDetailsPage() {
     const status = getEventStatus(event.date, event.time);
 
     if (missionType === 'share' && status === 'past') {
-      alert("Chỉ có thể chia sẻ khi sự kiện chưa hoặc đang diễn ra.");
+      notify("Chỉ có thể chia sẻ khi sự kiện chưa hoặc đang diễn ra.");
       return;
     }
 
     if (missionType === 'recap' && status !== 'past') {
-      alert("Chỉ có thể nhận điểm Recap sau khi sự kiện đã kết thúc.");
+      notify("Chỉ có thể nhận điểm Recap sau khi sự kiện đã kết thúc.");
       return;
     }
 
@@ -149,10 +151,10 @@ export default function EventDetailsPage() {
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || "Lỗi nhận điểm");
 
-      alert(`Thành công! Bạn được cộng ${data.points} điểm.`);
+      notify(`Thành công! Bạn được cộng ${data.points} điểm.`, "success");
       setClaimedMissions([...claimedMissions, missionType]);
     } catch (error: any) {
-      alert(error.message);
+      notify(error.message, "error");
     } finally {
       setMissionLoading(null);
     }
@@ -163,7 +165,7 @@ export default function EventDetailsPage() {
     const status = getEventStatus(event.date, event.time);
 
     if (status === 'past') {
-      alert("Chỉ có thể chia sẻ khi sự kiện chưa hoặc đang diễn ra.");
+      notify("Chỉ có thể chia sẻ khi sự kiện chưa hoặc đang diễn ra.");
       return;
     }
 
@@ -171,12 +173,12 @@ export default function EventDetailsPage() {
       const shareText = `${user.displayName || 'Mình'} mời bạn tham gia sự kiện ${event.title} được tổ chức tại: ${window.location.href}\n\n${event.description}\n\nĐăng ký tham gia ngay để CÓ CƠ HỘI nhận giấy chứng nhận từ Google cùng nhiều phần quà hấp dẫn.`;
 
       navigator.clipboard.writeText(shareText).then(() => {
-        alert("Đã copy nội dung bài đăng! Hệ thống sẽ mở Facebook. Vui lòng dán (Ctrl+V) vào bài viết của bạn nhé.");
+        notify("Đã copy nội dung bài đăng! Hệ thống sẽ mở Facebook. Vui lòng dán (Ctrl+V) vào bài viết của bạn nhé.", "success");
         window.open('https://www.facebook.com/sharer/sharer.php?u=' + encodeURIComponent(window.location.href), '_blank');
         setShareStep(1);
       }).catch(err => {
         console.error("Lỗi copy clipboard", err);
-        alert("Không thể copy tự động, vui lòng thử lại sau.");
+        notify("Không thể copy tự động, vui lòng thử lại sau.", "error");
       });
     } else {
       handleClaimMission('share');
@@ -188,7 +190,7 @@ export default function EventDetailsPage() {
     const status = getEventStatus(event.date, event.time);
 
     if (status !== 'past') {
-      alert("Chỉ có thể nhận điểm Recap sau khi sự kiện đã kết thúc.");
+      notify("Chỉ có thể nhận điểm Recap sau khi sự kiện đã kết thúc.");
       return;
     }
 
@@ -196,12 +198,12 @@ export default function EventDetailsPage() {
       const recapText = `[RECAP SỰ KIỆN: ${event.title}]\nXin chào mọi người, mình là ${user.displayName || 'một thành viên lớp'}.\nĐây là một số bài học và cảm nhận của mình sau sự kiện ngày ${event.date}...\n\n(Vui lòng viết tiếp cảm nhận của bạn vào đây)`;
 
       navigator.clipboard.writeText(recapText).then(() => {
-        alert("Đã copy mẫu Recap! Hệ thống sẽ mở Zalo. Vui lòng dán (Ctrl+V) vào Nhóm Zalo lớp học và viết thêm cảm nhận của bạn nhé.");
+        notify("Đã copy mẫu Recap! Hệ thống sẽ mở Zalo. Vui lòng dán (Ctrl+V) vào Nhóm Zalo lớp học và viết thêm cảm nhận của bạn nhé.", "success");
         window.open('https://chat.zalo.me/', '_blank');
         setRecapStep(1);
       }).catch(err => {
         console.error("Lỗi copy clipboard", err);
-        alert("Không thể copy tự động, vui lòng thử lại sau.");
+        notify("Không thể copy tự động, vui lòng thử lại sau.", "error");
       });
     } else {
       handleClaimMission('recap');

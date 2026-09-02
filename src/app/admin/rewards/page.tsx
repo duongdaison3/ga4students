@@ -4,11 +4,13 @@ import { useEffect, useState } from "react";
 import { collection, query, orderBy, getDocs } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { Gift, CheckCircle, XCircle, Search, RefreshCw } from "lucide-react";
+import { useNotification } from "@/components/NotificationProvider";
 
 export default function AdminRewardsPage() {
   const [requests, setRequests] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [processingId, setProcessingId] = useState<string | null>(null);
+  const { notify, confirm } = useNotification();
 
   const [filter, setFilter] = useState("all");
 
@@ -31,9 +33,9 @@ export default function AdminRewardsPage() {
 
   const updateStatus = async (requestId: string, newStatus: string) => {
     if (newStatus === "rejected") {
-      if (!confirm("Hủy đơn này sẽ hoàn lại điểm cho học viên. Bạn có chắc chắn không?")) return;
+      if (!await confirm("Hủy đơn này sẽ hoàn lại điểm cho học viên. Bạn có chắc chắn không?")) return;
     } else {
-      if (!confirm(`Chuyển trạng thái đơn này thành: ${newStatus === 'processing' ? 'Đang giao hàng' : 'Hoàn thành'}?`)) return;
+      if (!await confirm(`Chuyển trạng thái đơn này thành: ${newStatus === 'processing' ? 'Đang giao hàng' : 'Hoàn thành'}?`)) return;
     }
 
     setProcessingId(requestId);
@@ -53,12 +55,12 @@ export default function AdminRewardsPage() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Lỗi hệ thống");
 
-      alert(data.message);
+      notify(data.message, "success");
       
       // Update UI
       setRequests(prev => prev.map(r => r.id === requestId ? { ...r, status: newStatus } : r));
     } catch (error: any) {
-      alert(error.message);
+      notify(error.message, "error");
     } finally {
       setProcessingId(null);
     }

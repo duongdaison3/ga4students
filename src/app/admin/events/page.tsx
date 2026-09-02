@@ -7,6 +7,7 @@ import { Search, Plus, Trash2, Edit, X, Eye } from "lucide-react";
 import { RichTextEditor } from "@/components/RichTextEditor";
 import { getEventStatus } from "@/lib/utils";
 import Link from "next/link";
+import { useNotification } from "@/components/NotificationProvider";
 
 const TOPICS = [
   "Academic Excellence",
@@ -23,6 +24,7 @@ export default function AdminEvents() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editEventId, setEditEventId] = useState<string | null>(null);
   const [speakers, setSpeakers] = useState<any[]>([]);
+  const { notify, confirm } = useNotification();
 
   const [formData, setFormData] = useState({
     title: "",
@@ -84,15 +86,15 @@ export default function AdminEvents() {
           ...formData,
           updatedAt: new Date()
         });
-        alert("Cập nhật sự kiện thành công!");
+        notify("Cập nhật sự kiện thành công!", "success");
       } else {
         const newEventRef = await addDoc(collection(db, "events"), {
           ...formData,
           createdAt: new Date()
         });
-        alert("Thêm sự kiện thành công!");
+        notify("Thêm sự kiện thành công!", "success");
 
-        if (confirm("Bạn có muốn gửi thư mời đăng ký tham gia sự kiện này đến tất cả học viên không?")) {
+        if (await confirm("Bạn có muốn gửi thư mời đăng ký tham gia sự kiện này đến tất cả học viên không?")) {
           try {
             const currentUser = auth.currentUser;
             if (currentUser) {
@@ -106,11 +108,11 @@ export default function AdminEvents() {
               if (!response.ok) {
                 throw new Error(result.error || "Không thể gửi thư mời");
               }
-              alert(result.message);
+              notify(result.message, "success");
             }
           } catch (e) {
             console.error("Lỗi khi gọi API gửi thư mời:", e);
-            alert("Tạo sự kiện thành công nhưng gửi thư mời chưa hoàn tất. Vui lòng kiểm tra log máy chủ.");
+            notify("Tạo sự kiện thành công nhưng gửi thư mời chưa hoàn tất. Vui lòng kiểm tra log máy chủ.", "error");
           }
         }
       }
@@ -124,26 +126,26 @@ export default function AdminEvents() {
       });
       setEditEventId(null);
     } catch (error) {
-      alert("Đã xảy ra lỗi khi lưu sự kiện.");
+      notify("Đã xảy ra lỗi khi lưu sự kiện.", "error");
     } finally {
       setIsSubmitting(false);
     }
   };
 
   const handleDelete = async (id: string) => {
-    if (confirm("Bạn có chắc chắn muốn xóa sự kiện này? Hành động này không thể hoàn tác.")) {
+    if (await confirm("Bạn có chắc chắn muốn xóa sự kiện này? Hành động này không thể hoàn tác.")) {
       try {
         await deleteDoc(doc(db, "events", id));
         fetchEvents();
       } catch (error) {
-        alert("Lỗi khi xóa sự kiện");
+        notify("Lỗi khi xóa sự kiện", "error");
       }
     }
   };
 
   const handleToggleStatus = async (id: string, currentStatus: string) => {
     // Feature disabled: Status is now automatically calculated based on date/time.
-    alert("Trạng thái hiện tại được hệ thống tính tự động dựa trên Ngày và Giờ tổ chức.");
+    notify("Trạng thái hiện tại được hệ thống tính tự động dựa trên Ngày và Giờ tổ chức.");
   };
 
   const handleEdit = (event: any) => {

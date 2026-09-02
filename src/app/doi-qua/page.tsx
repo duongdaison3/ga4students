@@ -9,6 +9,7 @@ import { Footer } from "@/components/Footer";
 import { Gift, AlertCircle, ShoppingBag, History, CheckCircle, Clock, XCircle, ArrowRight } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useNotification } from "@/components/NotificationProvider";
 
 const REWARDS = [
   { id: "gemini_pro_3m", name: "Gemini Pro 3 tháng", points: 2500, type: "digital", limit: "Số lượng có hạn" },
@@ -23,6 +24,7 @@ const REWARDS = [
 
 export default function RewardStorePage() {
   const router = useRouter();
+  const { notify, confirm } = useNotification();
   const [user, setUser] = useState<User | null>(null);
   const [userPoints, setUserPoints] = useState(0);
   const [history, setHistory] = useState<any[]>([]);
@@ -72,7 +74,7 @@ export default function RewardStorePage() {
 
   const handleRedeemClick = (reward: any) => {
     if (userPoints < reward.points) {
-      alert("Bạn chưa đủ điểm để đổi phần quà này.");
+      notify("Bạn chưa đủ điểm để đổi phần quà này.", "error");
       return;
     }
     setSelectedReward(reward);
@@ -90,7 +92,7 @@ export default function RewardStorePage() {
       return;
     }
 
-    if (!confirm(`Xác nhận dùng ${selectedReward.points} điểm để đổi ${selectedReward.name}?`)) return;
+    if (!await confirm(`Xác nhận dùng ${selectedReward.points} điểm để đổi ${selectedReward.name}?`)) return;
 
     setIsRedeeming(true);
     try {
@@ -114,7 +116,7 @@ export default function RewardStorePage() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Lỗi hệ thống");
 
-      alert(data.message);
+      notify(data.message, "success");
 
       // Cập nhật giao diện nội bộ (giảm điểm, thêm lịch sử)
       setUserPoints(prev => prev - selectedReward.points);
@@ -130,7 +132,7 @@ export default function RewardStorePage() {
 
       setSelectedReward(null);
     } catch (error: any) {
-      alert(error.message);
+      notify(error.message, "error");
     } finally {
       setIsRedeeming(false);
     }

@@ -7,8 +7,10 @@ import { collection, query, where, getDocs, doc, onSnapshot } from "firebase/fir
 import { Calendar, MapPin, Clock, ArrowRight, User as UserIcon, Video, ExternalLink, FileText } from "lucide-react";
 import Link from "next/link";
 import { getEventStatus } from "@/lib/utils";
+import { useNotification } from "@/components/NotificationProvider";
 
 export function UpcomingEvents() {
+  const { notify } = useNotification();
   const [user, setUser] = useState<User | null>(null);
   const [events, setEvents] = useState<any[]>([]);
   const [processingId, setProcessingId] = useState<string | null>(null);
@@ -93,10 +95,10 @@ export function UpcomingEvents() {
         throw new Error(data.error || "Đăng ký thất bại");
       }
 
-      alert("🎉 Đăng ký sự kiện thành công! Bạn đã được cộng +10 điểm.");
+      notify("Đăng ký sự kiện thành công! Bạn đã được cộng +10 điểm.", "success");
       setRegisteredWorkshops((prev) => [...prev, eventId]);
     } catch (error: any) {
-      alert(error.message);
+      notify(error.message, "error");
     } finally {
       setProcessingId(null);
     }
