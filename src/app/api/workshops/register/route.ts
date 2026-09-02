@@ -30,68 +30,76 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Missing workshop info" }, { status: 400 });
     }
 
-    // 4. Check if user already registered for this workshop
-    const userRef = adminDb.collection("users").doc(uid);
-    const userDoc = await userRef.get();
-    
-    let fullName = email.split('@')[0]; // fallback
-    let registeredWorkshops = [];
-
-    if (userDoc.exists) {
-      const data = userDoc.data();
-      if (data?.fullName) fullName = data.fullName;
-      if (data?.registeredWorkshops) registeredWorkshops = data.registeredWorkshops;
-    }
-
-    if (registeredWorkshops.includes(workshopId)) {
-      return NextResponse.json({ error: "Bạn đã đăng ký tham gia buổi học này rồi." }, { status: 400 });
-    }
-
-    // 5. Update user's registered workshops and add 10 points in Firestore
-    registeredWorkshops.push(workshopId);
-    const currentPoints = userDoc.exists ? (userDoc.data()?.totalPoints || 0) : 0;
-    
-    await userRef.set({ 
-      registeredWorkshops,
-      totalPoints: currentPoints + 10
-    }, { merge: true });
-
-    // 5a. Record mission
-    await adminDb.collection("user_missions").doc(`${uid}_${workshopId}_register_event`).set({
-      userId: uid,
-      eventId: workshopId,
-      missionType: "register_event",
-      points: 10,
-      createdAt: new Date()
-    });
-
-    // 5b. Save to registrations collection for admin dashboard
-    await adminDb.collection("registrations").add({
-      eventId: workshopId,
-      userId: uid,
-      userEmail: email,
-      userFullName: fullName,
-      userUniversity: userDoc.exists ? (userDoc.data()?.university || "Trường Đại học") : "Trường Đại học",
-      eventTitle: workshopTitle,
-      registeredAt: new Date()
-    });
-
-    // Fetch event details to send accurate email
     const eventRef = adminDb.collection("events").doc(workshopId);
     const eventDoc = await eventRef.get();
-    let eventData = { date: "", time: "", type: "Online", location: "", meetingLink: "" };
-    if (eventDoc.exists) {
-      const data = eventDoc.data();
-      if (data) {
-        eventData = {
-          date: data.date || "",
-          time: data.time || "",
-          type: data.type || "Online",
-          location: data.location || "",
-          meetingLink: data.meetingLink || ""
-        };
-      }
+    if (!eventDoc.exists) {
+      return NextResponse.json({ error: "Sự kiện không tồn tại" }, { status: 404 });
     }
+
+    const event = eventDoc.data() || {};
+
+    // 4. Check registration and capacity atomically
+    const userRef = adminDb.collection("users").doc(uid);
+    const registrationRef = adminDb.collection("registrations").doc();
+    const missionRef = adminDb.collection("user_missions").doc(`${uid}_${workshopId}_register_event`);
+    let fullName = email.split('@')[0];
+    let eventData = {
+      date: event.date || "",
+      time: event.time || "",
+      type: event.type || "Online",
+      location: event.location || "",
+      meetingLink: event.meetingLink || ""
+    };
+
+    await adminDb.runTransaction(async transaction => {
+      const [currentEventDoc, userDoc, registrationSnapshot] = await Promise.all([
+        transaction.get(eventRef),
+        transaction.get(userRef),
+        transaction.get(adminDb.collection("registrations").where("eventId", "==", workshopId))
+      ]);
+      const currentEvent = currentEventDoc.data() || event;
+      const maxParticipants = Number.isInteger(currentEvent.maxParticipants) && currentEvent.maxParticipants > 0
+        ? currentEvent.maxParticipants
+        : null;
+      const registeredCount = Number.isInteger(currentEvent.registeredCount)
+        ? currentEvent.registeredCount
+        : registrationSnapshot.size;
+      const userData = userDoc.data();
+      const registeredWorkshops: string[] = Array.isArray(userData?.registeredWorkshops)
+        ? [...userData.registeredWorkshops]
+        : [];
+
+      if (registeredWorkshops.includes(workshopId)) {
+        throw new Error("ALREADY_REGISTERED");
+      }
+      if (maxParticipants !== null && registeredCount >= maxParticipants) {
+        throw new Error("EVENT_FULL");
+      }
+
+      fullName = userData?.fullName || fullName;
+      registeredWorkshops.push(workshopId);
+      transaction.set(userRef, {
+        registeredWorkshops,
+        totalPoints: (userData?.totalPoints || 0) + 10
+      }, { merge: true });
+      transaction.set(missionRef, {
+        userId: uid,
+        eventId: workshopId,
+        missionType: "register_event",
+        points: 10,
+        createdAt: new Date()
+      });
+      transaction.set(registrationRef, {
+        eventId: workshopId,
+        userId: uid,
+        userEmail: email,
+        userFullName: fullName,
+        userUniversity: userData?.university || "Trường Đại học",
+        eventTitle: workshopTitle,
+        registeredAt: new Date()
+      });
+      transaction.update(eventRef, { registeredCount: registeredCount + 1 });
+    });
 
     // Email is a follow-up notification. A temporary SMTP failure must not turn
     // a completed registration into a failed registration in the UI.
@@ -114,6 +122,12 @@ export async function POST(req: Request) {
     );
   } catch (error: any) {
     console.error("Lỗi đăng ký workshop:", error);
+    if (error.message === "ALREADY_REGISTERED") {
+      return NextResponse.json({ error: "Bạn đã đăng ký tham gia buổi học này rồi." }, { status: 400 });
+    }
+    if (error.message === "EVENT_FULL") {
+      return NextResponse.json({ error: "Sự kiện đã đóng đăng ký vì đã đủ số lượng người tham gia." }, { status: 409 });
+    }
     return NextResponse.json(
       { error: "Đã xảy ra lỗi hệ thống, vui lòng thử lại sau" },
       { status: 500 }

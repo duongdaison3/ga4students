@@ -18,6 +18,7 @@ export default function EventDetailsPage() {
   const { notify } = useNotification();
 
   const [event, setEvent] = useState<any>(null);
+  const [registrationCount, setRegistrationCount] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const [user, setUser] = useState<User | null>(null);
   const [processing, setProcessing] = useState(false);
@@ -59,6 +60,11 @@ export default function EventDetailsPage() {
         const docSnap = await getDoc(docRef);
         if (docSnap.exists()) {
           setEvent({ id: docSnap.id, ...docSnap.data() });
+          const registrationsSnap = await getDocs(query(
+            collection(db, "registrations"),
+            where("eventId", "==", docSnap.id)
+          ));
+          setRegistrationCount(registrationsSnap.size);
         } else {
           setEvent(null);
         }
@@ -119,6 +125,7 @@ export default function EventDetailsPage() {
         data.emailSent === false ? "info" : "success"
       );
       setIsRegistered(true);
+      setRegistrationCount(prev => prev + 1);
     } catch (error: any) {
       notify(error.message, "error");
     } finally {
@@ -243,6 +250,10 @@ export default function EventDetailsPage() {
   }
 
   const eventSpeakerNames = event.speakerNames || (event.speakerName ? [event.speakerName] : []);
+  const maxParticipants = Number.isInteger(event.maxParticipants) && event.maxParticipants > 0
+    ? event.maxParticipants
+    : null;
+  const isEventFull = maxParticipants !== null && registrationCount >= maxParticipants;
 
   return (
     <div className="flex flex-col min-h-screen bg-slate-50">
@@ -266,6 +277,11 @@ export default function EventDetailsPage() {
             <p className="text-lg text-slate-600 mb-10 leading-relaxed">
               {event.description}
             </p>
+            {maxParticipants !== null && (
+              <p className="mb-8 text-sm font-semibold text-slate-500">
+                Đã đăng ký {Math.min(registrationCount, maxParticipants)}/{maxParticipants} chỗ
+              </p>
+            )}
 
             <div className={`grid grid-cols-2 ${eventSpeakerNames.length ? 'md:grid-cols-4' : 'md:grid-cols-3'} gap-6 py-8 border-y border-slate-100 mb-10`}>
               <div className="flex flex-col gap-2">
@@ -310,7 +326,7 @@ export default function EventDetailsPage() {
           </div>
 
           {/* Registration Box */}
-          {event.status === 'opening' && getEventStatus(event.date, event.time) !== 'past' ? (
+          {event.status === 'opening' && getEventStatus(event.date, event.time) !== 'past' && !isEventFull ? (
             <div className="bg-gradient-to-br from-[#4285F4] to-[#3b77db] rounded-3xl p-8 md:p-12 text-white text-center shadow-xl">
               <h2 className="text-2xl md:text-3xl font-bold mb-4">Sẵn sàng nâng cấp kỹ năng?</h2>
               <p className="text-blue-100 mb-8 max-w-2xl mx-auto">
@@ -339,7 +355,7 @@ export default function EventDetailsPage() {
             </div>
           ) : (
             <div className="bg-slate-100 rounded-3xl p-8 text-center text-slate-500 font-medium">
-              Sự kiện này đã đóng đăng ký.
+              {isEventFull ? "Sự kiện đã đóng đăng ký vì đã đủ số lượng người tham gia." : "Sự kiện này đã đóng đăng ký."}
             </div>
           )}
 

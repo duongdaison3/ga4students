@@ -33,6 +33,7 @@ export default function AdminEvents() {
     mainContent: "",
     date: "",
     time: "",
+    maxParticipants: "",
     type: "Online",
     location: "Microsoft Team",
     meetingLink: "",
@@ -79,17 +80,26 @@ export default function AdminEvents() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    const maxParticipants = formData.maxParticipants.trim() === "" ? null : Number(formData.maxParticipants);
+    if (maxParticipants !== null && (!Number.isInteger(maxParticipants) || maxParticipants < 1)) {
+      notify("Số người tham gia tối đa phải là số nguyên dương.", "error");
+      return;
+    }
+
     setIsSubmitting(true);
     try {
       if (editEventId) {
         await updateDoc(doc(db, "events", editEventId), {
           ...formData,
+          maxParticipants,
           updatedAt: new Date()
         });
         notify("Cập nhật sự kiện thành công!", "success");
       } else {
         const newEventRef = await addDoc(collection(db, "events"), {
           ...formData,
+          maxParticipants,
+          registeredCount: 0,
           createdAt: new Date()
         });
         notify("Thêm sự kiện thành công!", "success");
@@ -121,7 +131,7 @@ export default function AdminEvents() {
       // Reset form
       setFormData({
         title: "", topic: TOPICS[0], description: "", mainContent: "",
-        date: "", time: "", type: "Online", location: "Microsoft Teams", meetingLink: "", status: "opening",
+        date: "", time: "", maxParticipants: "", type: "Online", location: "Microsoft Teams", meetingLink: "", status: "opening",
         speakerIds: [], speakerNames: [], speakerId: "", speakerName: "", slideLink: "", recordLink: ""
       });
       setEditEventId(null);
@@ -156,6 +166,7 @@ export default function AdminEvents() {
       mainContent: event.mainContent || "",
       date: event.date || "",
       time: event.time || "",
+      maxParticipants: event.maxParticipants?.toString() || "",
       type: event.type || "Online",
       location: event.location || "",
       meetingLink: event.meetingLink || "",
@@ -179,7 +190,7 @@ export default function AdminEvents() {
           onClick={() => {
             setFormData({
               title: "", topic: TOPICS[0], description: "", mainContent: "",
-              date: "", time: "", type: "Online", location: "Microsoft Teams", meetingLink: "", status: "opening",
+              date: "", time: "", maxParticipants: "", type: "Online", location: "Microsoft Teams", meetingLink: "", status: "opening",
               speakerIds: [], speakerNames: [], speakerId: "", speakerName: "", slideLink: "", recordLink: ""
             });
             setEditEventId(null);
@@ -292,6 +303,19 @@ export default function AdminEvents() {
                 <div className="space-y-2">
                   <label className="text-sm font-medium text-slate-700">Thời gian <span className="text-red-500">*</span></label>
                   <input required type="text" placeholder="VD: 19:00 - 21:00" value={formData.time} onChange={e => setFormData({ ...formData, time: e.target.value })} className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-[#4285F4] focus:outline-none" />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-slate-700">Số người tham gia tối đa</label>
+                  <input
+                    type="number"
+                    min="1"
+                    step="1"
+                    value={formData.maxParticipants}
+                    onChange={e => setFormData({ ...formData, maxParticipants: e.target.value })}
+                    placeholder="Để trống nếu không giới hạn"
+                    className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-[#4285F4] focus:outline-none"
+                  />
+                  <p className="text-xs text-slate-500">Chỉ nhập số nguyên dương.</p>
                 </div>
 
                 <div className="space-y-2">
