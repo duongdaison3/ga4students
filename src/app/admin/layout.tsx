@@ -7,7 +7,7 @@ import { doc, getDoc, collection, query, where, getDocs } from "firebase/firesto
 import { auth, db } from "@/lib/firebase";
 import Link from "next/link";
 import { Users, Calendar, LayoutDashboard, LogOut, ArrowLeft, Mail, Menu, ChevronLeft, Gift } from "lucide-react";
-import { isAdminEmail } from "@/lib/admin";
+import { hasStaffRole, isAdminEmail } from "@/lib/admin";
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
@@ -24,13 +24,13 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         } else {
           try {
             const userDoc = await getDoc(doc(db, "users", user.uid));
-            if (userDoc.exists() && userDoc.data().role === 'admin') {
+            if (userDoc.exists() && hasStaffRole(userDoc.data().role)) {
               setIsAuthorized(true);
             } else {
               // Fallback check by email in case of different Google UID
               const q = query(collection(db, "users"), where("email", "==", user.email));
               const querySnapshot = await getDocs(q);
-              if (!querySnapshot.empty && querySnapshot.docs[0].data().role === 'admin') {
+              if (!querySnapshot.empty && hasStaffRole(querySnapshot.docs[0].data().role)) {
                 setIsAuthorized(true);
               } else {
                 router.replace("/");

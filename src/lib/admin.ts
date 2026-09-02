@@ -8,3 +8,7 @@ export const ADMIN_EMAILS = [
 export function isAdminEmail(email?: string | null) {
   return Boolean(email && ADMIN_EMAILS.includes(email.toLowerCase()));
 }
+
+export function hasStaffRole(role?: string | null) {
+  return role === "admin" || role === "speaker";
+}

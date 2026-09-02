@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { adminAuth, adminDb } from "@/lib/firebase-admin";
 import { sendEventInvitationEmail } from "@/lib/email";
-import { isAdminEmail } from "@/lib/admin";
+import { hasStaffRole, isAdminEmail } from "@/lib/admin";
 
 export const runtime = "nodejs";
 
@@ -17,7 +17,7 @@ export async function POST(req: Request) {
     
     // Kiểm tra quyền admin
     const callerDoc = await adminDb.collection("users").doc(decodedToken.uid).get();
-    if (!isAdminEmail(decodedToken.email) && (!callerDoc.exists || callerDoc.data()?.role !== "admin")) {
+    if (!isAdminEmail(decodedToken.email) && (!callerDoc.exists || !hasStaffRole(callerDoc.data()?.role))) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 

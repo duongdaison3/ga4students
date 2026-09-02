@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { adminAuth, adminDb } from "@/lib/firebase-admin";
 import { sendPersonalizedMarketingEmail } from "@/lib/email";
-import { isAdminEmail } from "@/lib/admin";
+import { hasStaffRole, isAdminEmail } from "@/lib/admin";
 
 export const runtime = "nodejs";
 
@@ -21,11 +21,11 @@ export async function POST(req: Request) {
       isAdmin = true;
     } else {
       const callerDoc = await adminDb.collection("users").doc(decodedToken.uid).get();
-      if (callerDoc.exists && callerDoc.data()?.role === "admin") {
+      if (callerDoc.exists && hasStaffRole(callerDoc.data()?.role)) {
         isAdmin = true;
       } else if (decodedToken.email) {
         const q = await adminDb.collection("users").where("email", "==", decodedToken.email).get();
-        if (!q.empty && q.docs[0].data().role === "admin") {
+        if (!q.empty && hasStaffRole(q.docs[0].data().role)) {
           isAdmin = true;
         }
       }

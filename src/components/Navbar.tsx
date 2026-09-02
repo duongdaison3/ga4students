@@ -7,7 +7,7 @@ import { auth, db } from "@/lib/firebase";
 import { onAuthStateChanged, signOut, User } from "firebase/auth";
 import { ChevronDown, User as UserIcon, LogOut, KeyRound, Menu, X } from "lucide-react";
 import { collection, doc, getDoc, getDocs, query, where } from "firebase/firestore";
-import { isAdminEmail } from "@/lib/admin";
+import { hasStaffRole, isAdminEmail } from "@/lib/admin";
 
 export function Navbar() {
   const [user, setUser] = useState<User | null>(null);
@@ -24,12 +24,12 @@ export function Navbar() {
         } else {
           try {
             const userDoc = await getDoc(doc(db, "users", currentUser.uid));
-            if (userDoc.exists() && userDoc.data().role === 'admin') {
+            if (userDoc.exists() && hasStaffRole(userDoc.data().role)) {
               setIsAdmin(true);
             } else if (currentUser.email) {
               const q = query(collection(db, "users"), where("email", "==", currentUser.email));
               const querySnapshot = await getDocs(q);
-              if (!querySnapshot.empty && querySnapshot.docs[0].data().role === 'admin') {
+              if (!querySnapshot.empty && hasStaffRole(querySnapshot.docs[0].data().role)) {
                 setIsAdmin(true);
               } else {
                 setIsAdmin(false);

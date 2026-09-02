@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { adminAuth, adminDb } from "@/lib/firebase-admin";
-import { isAdminEmail } from "@/lib/admin";
+import { hasStaffRole, isAdminEmail } from "@/lib/admin";
 
 export const runtime = "nodejs";
 
@@ -21,7 +21,7 @@ export async function DELETE(req: Request, { params }: { params: Promise<{ userI
     let isAdmin = isAdminEmail(decodedToken.email);
     if (!isAdmin) {
       const callerDoc = await adminDb.collection("users").doc(decodedToken.uid).get();
-      if (callerDoc.exists && callerDoc.data()?.role === "admin") {
+      if (callerDoc.exists && hasStaffRole(callerDoc.data()?.role)) {
         isAdmin = true;
       }
     }

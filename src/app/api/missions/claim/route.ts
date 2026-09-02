@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { adminAuth, adminDb } from "@/lib/firebase-admin";
-import { isAdminEmail } from "@/lib/admin";
+import { hasStaffRole, isAdminEmail } from "@/lib/admin";
 
 export const runtime = "nodejs";
 
@@ -25,7 +25,7 @@ export async function POST(req: Request) {
     if (missionType === "attendance" && targetUserIds && Array.isArray(targetUserIds)) {
       // BATCH PROCESSING FOR MULTIPLE USERS
       const callerDoc = await adminDb.collection("users").doc(userId).get();
-      if (!isAdminEmail(decodedToken.email) && (!callerDoc.exists || callerDoc.data()?.role !== "admin")) {
+      if (!isAdminEmail(decodedToken.email) && (!callerDoc.exists || !hasStaffRole(callerDoc.data()?.role))) {
         return NextResponse.json({ error: "Chỉ Admin mới có quyền điểm danh" }, { status: 403 });
       }
 
@@ -93,7 +93,7 @@ export async function POST(req: Request) {
     if (missionType === "attendance") {
       // Only admins can trigger attendance
       const callerDoc = await adminDb.collection("users").doc(userId).get();
-      if (!isAdminEmail(decodedToken.email) && (!callerDoc.exists || callerDoc.data()?.role !== "admin")) {
+      if (!isAdminEmail(decodedToken.email) && (!callerDoc.exists || !hasStaffRole(callerDoc.data()?.role))) {
         return NextResponse.json({ error: "Chỉ Admin mới có quyền điểm danh" }, { status: 403 });
       }
       points = 100;
