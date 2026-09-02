@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { adminAuth, adminDb } from "@/lib/firebase-admin";
+import { isAdminEmail } from "@/lib/admin";
 
 export const runtime = "nodejs";
 
@@ -16,7 +17,7 @@ export async function POST(req: Request) {
 
     // Verify admin role
     const adminDoc = await adminDb.collection("users").doc(adminId).get();
-    if (!adminDoc.exists || adminDoc.data()?.role !== "admin") {
+    if (!isAdminEmail(decodedToken.email) && (!adminDoc.exists || adminDoc.data()?.role !== "admin")) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 

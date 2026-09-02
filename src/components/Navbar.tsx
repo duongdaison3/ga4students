@@ -7,6 +7,7 @@ import { auth, db } from "@/lib/firebase";
 import { onAuthStateChanged, signOut, User } from "firebase/auth";
 import { ChevronDown, User as UserIcon, LogOut, KeyRound, Menu, X } from "lucide-react";
 import { collection, doc, getDoc, getDocs, query, where } from "firebase/firestore";
+import { isAdminEmail } from "@/lib/admin";
 
 export function Navbar() {
   const [user, setUser] = useState<User | null>(null);
@@ -18,7 +19,7 @@ export function Navbar() {
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
       setUser(currentUser);
       if (currentUser) {
-        if (currentUser.email && ["pea44.work@gmail.com", "spea22@xpea.io.vn", "vuongtonga171105@gmail.com"].includes(currentUser.email)) {
+        if (isAdminEmail(currentUser.email)) {
           setIsAdmin(true);
         } else {
           try {

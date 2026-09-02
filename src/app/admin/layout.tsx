@@ -7,12 +7,7 @@ import { doc, getDoc, collection, query, where, getDocs } from "firebase/firesto
 import { auth, db } from "@/lib/firebase";
 import Link from "next/link";
 import { Users, Calendar, LayoutDashboard, LogOut, ArrowLeft, Mail, Menu, ChevronLeft, Gift } from "lucide-react";
-
-const ADMIN_EMAILS = [
-  "pea44.work@gmail.com",
-  "spea22@xpea.io.vn",
-  "vuongtonga171105@gmail.com"
-];
+import { isAdminEmail } from "@/lib/admin";
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
@@ -24,7 +19,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       if (user && user.email) {
-        if (ADMIN_EMAILS.includes(user.email)) {
+        if (isAdminEmail(user.email)) {
           setIsAuthorized(true);
         } else {
           try {

@@ -1,14 +1,9 @@
 import { NextResponse } from "next/server";
 import { adminAuth, adminDb } from "@/lib/firebase-admin";
 import { sendPersonalizedMarketingEmail } from "@/lib/email";
+import { isAdminEmail } from "@/lib/admin";
 
 export const runtime = "nodejs";
-
-const ADMIN_EMAILS = [
-  "pea44.work@gmail.com",
-  "spea22@xpea.io.vn",
-  "vuongtonga171105@gmail.com"
-];
 
 export async function POST(req: Request) {
   try {
@@ -22,7 +17,7 @@ export async function POST(req: Request) {
     
     // Check admin
     let isAdmin = false;
-    if (decodedToken.email && ADMIN_EMAILS.includes(decodedToken.email)) {
+    if (isAdminEmail(decodedToken.email)) {
       isAdmin = true;
     } else {
       const callerDoc = await adminDb.collection("users").doc(decodedToken.uid).get();
