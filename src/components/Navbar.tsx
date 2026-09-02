@@ -57,11 +57,11 @@ export function Navbar() {
 
   const navLinks = [
     { name: "Trang chủ", href: "/" },
-    { name: "Câu hỏi thường gặp", href: "/faq" },
+    { name: "FAQ", href: "/faq" },
     { name: "Sắp diễn ra", href: "/su-kien#upcoming" },
     { name: "Đã diễn ra", href: "/su-kien#past" },
-    { name: "Bảng Vàng Elite", href: "/the-gemini-elite" },
-    { name: "Cửa hàng Đổi Quà", href: "/doi-qua" },
+    { name: "Gemini Elite", href: "/the-gemini-elite" },
+    { name: "Trạm Point", href: "/doi-qua" },
   ];
 
   return (
