@@ -97,15 +97,20 @@ export default function AdminEvents() {
             const currentUser = auth.currentUser;
             if (currentUser) {
               const idToken = await currentUser.getIdToken();
-              fetch('/api/admin/events/invite', {
+              const response = await fetch('/api/admin/events/invite', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${idToken}` },
                 body: JSON.stringify({ eventId: newEventRef.id })
               });
-              alert("Hệ thống đang tiến hành gửi thư mời ngầm tới tất cả người dùng!");
+              const result = await response.json();
+              if (!response.ok) {
+                throw new Error(result.error || "Không thể gửi thư mời");
+              }
+              alert(result.message);
             }
           } catch (e) {
             console.error("Lỗi khi gọi API gửi thư mời:", e);
+            alert("Tạo sự kiện thành công nhưng gửi thư mời chưa hoàn tất. Vui lòng kiểm tra log máy chủ.");
           }
         }
       }

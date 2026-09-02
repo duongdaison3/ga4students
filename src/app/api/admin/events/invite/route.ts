@@ -44,27 +44,40 @@ export async function POST(req: Request) {
     const safeBaseUrl = baseUrl.endsWith("/") ? baseUrl.slice(0, -1) : baseUrl;
     const eventLink = `${safeBaseUrl}/su-kien/${eventId}`;
 
-    // Tạo promise để gửi ngầm
+    // Giữ request sống cho đến khi hoàn tất để môi trường serverless không dừng tiến trình giữa chừng.
     const sendAllEmails = async () => {
-      console.log(`Bắt đầu gửi thư mời sự kiện ${eventId} cho ${users.length} người dùng...`);
-      for (const user of users) {
-        if (user.email) {
+      const recipients = users.filter(user => user.email);
+      let sent = 0;
+      let failed = 0;
+
+      console.log(`Bắt đầu gửi thư mời sự kiện ${eventId} cho ${recipients.length} người dùng...`);
+      for (let index = 0; index < recipients.length; index += 5) {
+        const batch = recipients.slice(index, index + 5);
+        const results = await Promise.all(batch.map(async user => {
           try {
-            await sendEventInvitationEmail(user.email, user.fullName || "Bạn", event, eventLink);
-            // Có thể thêm delay nhỏ để tránh quá tải SMTP
-            await new Promise(r => setTimeout(r, 100));
-          } catch (e) {
-            console.error(`Lỗi gửi thư mời cho ${user.email}:`, e);
+            return await sendEventInvitationEmail(user.email, user.fullName || "Bạn", event, eventLink);
+          } catch (error) {
+            console.error(`Lỗi gửi thư mời cho ${user.email}:`, error);
+            return false;
           }
-        }
+        }));
+
+        sent += results.filter(Boolean).length;
+        failed += results.length - results.filter(Boolean).length;
+        await new Promise(resolve => setTimeout(resolve, 250));
       }
-      console.log(`Hoàn thành gửi thư mời sự kiện ${eventId}`);
+
+      console.log(`Hoàn thành gửi thư mời sự kiện ${eventId}: ${sent} thành công, ${failed} thất bại.`);
+      return { total: recipients.length, sent, failed };
     };
 
-    // Gọi không await để chạy ngầm
-    sendAllEmails();
+    const result = await sendAllEmails();
 
-    return NextResponse.json({ success: true, message: "Đang tiến hành gửi thư mời ngầm." });
+    return NextResponse.json({
+      success: true,
+      message: `Đã gửi ${result.sent}/${result.total} thư mời${result.failed ? `, ${result.failed} thư thất bại` : ""}.`,
+      ...result
+    });
   } catch (error: any) {
     console.error("Error initiating event invites:", error);
     return NextResponse.json(
