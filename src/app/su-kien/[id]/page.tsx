@@ -112,7 +112,12 @@ export default function EventDetailsPage() {
         throw new Error(data.error || "Đăng ký thất bại");
       }
 
-      notify("Đăng ký sự kiện thành công! Bạn đã được cộng +10 điểm.\n\nVui lòng kéo xuống phần 'Nhiệm vụ The Gemini Elite' bên dưới để làm nhiệm vụ và kiếm thêm điểm thưởng nhé!", "success");
+      notify(
+        data.emailSent === false
+          ? "Đăng ký sự kiện thành công và bạn đã được cộng +10 điểm.\n\nEmail xác nhận chưa gửi được, nhưng chỗ của bạn đã được giữ. Vui lòng liên hệ quản trị viên nếu cần nhận lại email."
+          : "Đăng ký sự kiện thành công! Bạn đã được cộng +10 điểm.\n\nVui lòng kéo xuống phần 'Nhiệm vụ The Gemini Elite' bên dưới để làm nhiệm vụ và kiếm thêm điểm thưởng nhé!",
+        data.emailSent === false ? "info" : "success"
+      );
       setIsRegistered(true);
     } catch (error: any) {
       notify(error.message, "error");

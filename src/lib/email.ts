@@ -181,7 +181,7 @@ export const sendEventInvitationEmail = async (
   eventLink: string
 ) => {
   const mailOptions = {
-    from: `"Gemini Academy" <${process.env.GMAIL_USER}>`,
+    from: `"Gemini Academy" <${senderAddress}>`,
     to: email,
     subject: `[THƯ MỜI] ĐĂNG KÝ THAM GIA LỚP HỌC - ${event.title.toUpperCase()}`,
     html: `

@@ -95,7 +95,12 @@ export function UpcomingEvents() {
         throw new Error(data.error || "Đăng ký thất bại");
       }
 
-      notify("Đăng ký sự kiện thành công! Bạn đã được cộng +10 điểm.", "success");
+      notify(
+        data.emailSent === false
+          ? "Đăng ký thành công và bạn đã được cộng +10 điểm, nhưng email xác nhận chưa gửi được. Chỗ của bạn đã được giữ."
+          : "Đăng ký sự kiện thành công! Bạn đã được cộng +10 điểm.",
+        data.emailSent === false ? "info" : "success"
+      );
       setRegisteredWorkshops((prev) => [...prev, eventId]);
     } catch (error: any) {
       notify(error.message, "error");

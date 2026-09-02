@@ -93,11 +93,23 @@ export async function POST(req: Request) {
       }
     }
 
-    // 6. Send confirmation email
-    await sendWorkshopRegistrationEmail(email, fullName, workshopTitle, eventData);
+    // Email is a follow-up notification. A temporary SMTP failure must not turn
+    // a completed registration into a failed registration in the UI.
+    let emailSent = true;
+    try {
+      await sendWorkshopRegistrationEmail(email, fullName, workshopTitle, eventData);
+    } catch (emailError) {
+      emailSent = false;
+      console.error(`Đăng ký thành công nhưng gửi email xác nhận thất bại cho ${email}:`, emailError);
+    }
 
     return NextResponse.json(
-      { message: "Đăng ký thành công" },
+      {
+        message: emailSent
+          ? "Đăng ký thành công"
+          : "Đăng ký thành công nhưng email xác nhận chưa gửi được. Vui lòng kiểm tra lại hòm thư sau hoặc liên hệ quản trị viên.",
+        emailSent
+      },
       { status: 200 }
     );
   } catch (error: any) {
