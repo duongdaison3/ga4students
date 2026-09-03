@@ -111,13 +111,14 @@ export const sendGiftCodeEmail = async (
   subject = "Chúc mừng bạn đã nhận được quà tặng"
 ) => {
   const link = giftUrl ? `\n\nLink quà tặng: ${giftUrl}` : "";
-  const text = `Xin chào ${fullName},\n\nChúc mừng bạn đã nhận được: ${giftName}.${description ? `\n\nThông tin quà tặng: ${description}` : ""}${link}\n\nTrân trọng,\nGemini Academy for Students`;
+  const registerUrl = `${process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"}/dang-ky`;
+  const text = `Xin chào ${fullName},\n\nChúc mừng bạn đã nhận được: ${giftName}.${description ? `\n\nThông tin quà tặng: ${description}` : ""}${link}\n\nBạn có thể đăng ký tài khoản để theo dõi lịch sử nhận quà: ${registerUrl}\n\nTrân trọng,\nGemini Academy for Students`;
   const info = await transporter.sendMail({
     from: `"Gemini Academy" <${senderAddress}>`,
     to: email,
     subject,
     text,
-    html: `<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 24px; color: #334155;"><h2 style="color: #4285F4;">Gemini Academy for Students</h2><p>Xin chào <strong>${fullName}</strong>,</p><p>Chúc mừng bạn đã nhận được:</p><p style="font-size: 18px; font-weight: bold;">${giftName}</p>${description ? `<p>${description}</p>` : ""}${giftUrl ? `<p><a href="${giftUrl}" style="color: #4285F4; font-weight: bold;">Mở link quà tặng</a></p><p style="word-break: break-all;">${giftUrl}</p>` : ""}<p>Trân trọng,<br />Gemini Academy for Students</p></div>`,
+    html: `<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 24px; color: #334155;"><h2 style="color: #4285F4;">Gemini Academy for Students</h2><p>Xin chào <strong>${fullName}</strong>,</p><p>Chúc mừng bạn đã nhận được:</p><p style="font-size: 18px; font-weight: bold;">${giftName}</p>${description ? `<p>${description}</p>` : ""}${giftUrl ? `<p><a href="${giftUrl}" style="color: #4285F4; font-weight: bold;">Mở link quà tặng</a></p><p style="word-break: break-all;">${giftUrl}</p>` : ""}<p>Nếu bạn chưa có tài khoản, hãy <a href="${registerUrl}" style="color: #4285F4; font-weight: bold;">đăng ký tại đây</a> để theo dõi lịch sử nhận quà.</p><p>Trân trọng,<br />Gemini Academy for Students</p></div>`,
   });
   logEmailResult("Gift code email", info);
   return info;

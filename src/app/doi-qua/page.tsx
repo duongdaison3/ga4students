@@ -34,6 +34,7 @@ export default function RewardStorePage() {
   const [isRedeeming, setIsRedeeming] = useState(false);
   const [giftCode, setGiftCode] = useState("");
   const [isRedeemingCode, setIsRedeemingCode] = useState(false);
+  const [guestEmail, setGuestEmail] = useState("");
 
   // Form state
   const [address, setAddress] = useState("");
@@ -44,7 +45,6 @@ export default function RewardStorePage() {
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
       if (!currentUser) {
         setLoading(false);
-        router.push("/dang-nhap?redirect=/doi-qua");
         return;
       }
       setUser(currentUser);
@@ -142,19 +142,23 @@ export default function RewardStorePage() {
 
   const redeemGiftCode = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!giftCode.trim() || !user) return;
+    if (!giftCode.trim() || (!user && !guestEmail.trim())) {
+      notify("Vui lòng nhập email để nhận quà.", "error");
+      return;
+    }
     setIsRedeemingCode(true);
     try {
-      const idToken = await user.getIdToken();
+      const idToken = user ? await user.getIdToken() : null;
       const res = await fetch("/api/gift-codes/redeem", {
         method: "POST",
-        headers: { "Content-Type": "application/json", "Authorization": `Bearer ${idToken}` },
-        body: JSON.stringify({ code: giftCode })
+        headers: { "Content-Type": "application/json", ...(idToken ? { "Authorization": `Bearer ${idToken}` } : {}) },
+        body: JSON.stringify({ code: giftCode, email: guestEmail })
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Lỗi hệ thống");
       notify(data.message, "success");
       setGiftCode("");
+      setGuestEmail("");
       const newRecord = { id: "gift_" + Date.now(), rewardName: data.message.replace("Nhận quà thành công: ", "").replace(". Admin sẽ liên hệ với bạn sớm.", ""), pointsUsed: 0, status: data.autoCompleted ? "completed" : "pending", createdAt: { seconds: Date.now() / 1000 } };
       setHistory(prev => [newRecord, ...prev]);
     } catch (error: any) {
@@ -185,8 +189,9 @@ export default function RewardStorePage() {
         <p className="text-blue-100 text-lg max-w-2xl mx-auto mb-8">
           Sử dụng điểm tích lũy The Gemini Elite của bạn để đổi lấy những phần quà độc quyền từ Google.
         </p>
-        <div className="inline-flex items-center gap-3 bg-white/20 backdrop-blur-md px-6 py-3 rounded-full border border-white/30 text-white font-bold shadow-lg">
-          <ShoppingBag className="w-5 h-5" /> Điểm hiện tại của bạn: <span className="text-2xl text-yellow-300">{userPoints}</span>
+        <div className={`inline-flex items-center gap-3 bg-white/20 backdrop-blur-md px-6 py-3 rounded-full border border-white/30 text-white font-bold shadow-lg ${!user ? "opacity-60" : ""}`}>
+          <ShoppingBag className="w-5 h-5" /> {user ? "Điểm hiện tại của bạn:" : "Điểm tích lũy:"} <span className="text-2xl text-yellow-300">{user ? userPoints : "--"}</span>
+          {!user && <span className="text-sm text-blue-100">Đăng nhập để tích lũy</span>}
         </div>
       </div>
 
@@ -194,13 +199,14 @@ export default function RewardStorePage() {
         <div className="container mx-auto max-w-5xl">
 
           <div className="flex justify-end mb-6">
-            <Link href="/the-gemini-elite" className="text-white hover:text-blue-100 flex items-center gap-2 font-medium transition-colors">
-              Đến Bảng Vàng <ArrowRight className="w-4 h-4" />
+            <Link href={user ? "/the-gemini-elite" : "/dang-nhap?redirect=/doi-qua"} className="text-white hover:text-blue-100 flex items-center gap-2 font-medium transition-colors">
+              {user ? "Đến Bảng Vàng" : "Đăng nhập để xem Bảng Vàng"} <ArrowRight className="w-4 h-4" />
             </Link>
           </div>
 
           {/* Nhiệm vụ kiếm điểm */}
-          <div className="bg-white rounded-3xl p-6 md:p-8 shadow-sm border border-slate-200 mb-8 relative z-10">
+          <div className={`bg-white rounded-3xl p-6 md:p-8 shadow-sm border border-slate-200 mb-8 relative z-10 ${!user ? "opacity-50" : ""}`}>
+            {!user && <div className="absolute inset-0 z-20 flex items-center justify-center rounded-3xl bg-slate-100/40 p-6"><div className="text-center"><p className="font-bold text-slate-800 mb-3">Đăng nhập hoặc đăng ký để tích lũy điểm</p><Link href="/dang-nhap?redirect=/doi-qua" className="inline-flex items-center gap-2 rounded-lg bg-[#4285F4] px-4 py-2 font-bold text-white">Đăng nhập / Đăng ký <ArrowRight className="w-4 h-4" /></Link></div></div>}
             <div className="flex items-center gap-3 mb-6">
               <CheckCircle className="w-6 h-6 text-green-500" />
               <h2 className="text-2xl font-bold text-slate-800">Làm sao để kiếm điểm thưởng?</h2>
@@ -248,12 +254,15 @@ export default function RewardStorePage() {
             <p className="text-slate-500 mb-5">Nhập mã quà tặng bạn nhận được từ ban tổ chức.</p>
             <form onSubmit={redeemGiftCode} className="flex flex-col sm:flex-row gap-3 max-w-2xl">
               <input value={giftCode} onChange={e => setGiftCode(e.target.value.toUpperCase())} maxLength={40} placeholder="Nhập gift code" className="flex-1 border border-slate-300 rounded-xl px-4 py-3 font-semibold tracking-wider uppercase focus:outline-none focus:ring-2 focus:ring-[#4285F4]/50" />
+              {!user && <input type="email" value={guestEmail} onChange={e => setGuestEmail(e.target.value)} placeholder="Email nhận quà" className="flex-1 border border-slate-300 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#4285F4]/50" />}
               <button type="submit" disabled={isRedeemingCode || !giftCode.trim()} className="px-6 py-3 rounded-xl font-bold text-white bg-[#4285F4] hover:bg-blue-600 disabled:opacity-50">{isRedeemingCode ? "Đang kiểm tra..." : "Nhận quà"}</button>
             </form>
+            {!user && <p className="text-sm text-slate-500 mt-3">Chưa có tài khoản? Bạn vẫn có thể nhận quà bằng email và đăng ký sau để theo dõi lịch sử.</p>}
           </div>
 
           {/* Grid Quà tặng */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 mb-16 relative z-10">
+          <div className={`grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 mb-16 relative z-10 ${!user ? "opacity-50" : ""}`}>
+            {!user && <div className="absolute inset-0 z-20 flex items-center justify-center rounded-2xl bg-slate-100/40 p-6"><div className="text-center"><p className="font-bold text-slate-800 mb-3">Đăng nhập hoặc đăng ký để đổi quà bằng điểm</p><Link href="/dang-nhap?redirect=/doi-qua" className="inline-flex items-center gap-2 rounded-lg bg-[#4285F4] px-4 py-2 font-bold text-white">Đăng nhập / Đăng ký <ArrowRight className="w-4 h-4" /></Link></div></div>}
             {REWARDS.map((reward) => (
               <div key={reward.id} className="bg-white rounded-2xl p-6 shadow-xl border border-slate-100 flex flex-col justify-between hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 relative overflow-hidden group">
                 <div className="absolute top-0 right-0 p-2 opacity-5 text-slate-900 group-hover:opacity-10 transition-opacity">
@@ -285,7 +294,8 @@ export default function RewardStorePage() {
           </div>
 
           {/* Lịch sử đổi quà */}
-          <div className="bg-white rounded-3xl p-8 shadow-sm border border-slate-200">
+          <div className={`bg-white rounded-3xl p-8 shadow-sm border border-slate-200 relative ${!user ? "opacity-50" : ""}`}>
+            {!user && <div className="absolute inset-0 z-20 flex items-center justify-center rounded-3xl bg-slate-100/40 p-6"><div className="text-center"><p className="font-bold text-slate-800 mb-3">Đăng nhập hoặc đăng ký để xem lịch sử đổi quà</p><Link href="/dang-nhap?redirect=/doi-qua" className="inline-flex items-center gap-2 rounded-lg bg-[#4285F4] px-4 py-2 font-bold text-white">Đăng nhập / Đăng ký <ArrowRight className="w-4 h-4" /></Link></div></div>}
             <div className="flex items-center gap-3 mb-6">
               <History className="w-6 h-6 text-slate-500" />
               <h2 className="text-xl font-bold text-slate-800">Lịch sử đổi quà của bạn</h2>
