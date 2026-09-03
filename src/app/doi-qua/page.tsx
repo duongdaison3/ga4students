@@ -6,7 +6,7 @@ import { collection, doc, getDoc, getDocs, query, where, orderBy } from "firebas
 import { auth, db } from "@/lib/firebase";
 import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
-import { Gift, AlertCircle, ShoppingBag, History, CheckCircle, Clock, XCircle, ArrowRight } from "lucide-react";
+import { Gift, AlertCircle, ShoppingBag, History, CheckCircle, Clock, XCircle, ArrowRight, Ticket } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useNotification } from "@/components/NotificationProvider";
@@ -32,6 +32,8 @@ export default function RewardStorePage() {
 
   const [selectedReward, setSelectedReward] = useState<any | null>(null);
   const [isRedeeming, setIsRedeeming] = useState(false);
+  const [giftCode, setGiftCode] = useState("");
+  const [isRedeemingCode, setIsRedeemingCode] = useState(false);
 
   // Form state
   const [address, setAddress] = useState("");
@@ -138,6 +140,30 @@ export default function RewardStorePage() {
     }
   };
 
+  const redeemGiftCode = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!giftCode.trim() || !user) return;
+    setIsRedeemingCode(true);
+    try {
+      const idToken = await user.getIdToken();
+      const res = await fetch("/api/gift-codes/redeem", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "Authorization": `Bearer ${idToken}` },
+        body: JSON.stringify({ code: giftCode })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Lỗi hệ thống");
+      notify(data.message, "success");
+      setGiftCode("");
+      const newRecord = { id: "gift_" + Date.now(), rewardName: data.message.replace("Nhận quà thành công: ", "").replace(". Admin sẽ liên hệ với bạn sớm.", ""), pointsUsed: 0, status: "pending", createdAt: { seconds: Date.now() / 1000 } };
+      setHistory(prev => [newRecord, ...prev]);
+    } catch (error: any) {
+      notify(error.message, "error");
+    } finally {
+      setIsRedeemingCode(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex flex-col min-h-screen">
@@ -212,6 +238,18 @@ export default function RewardStorePage() {
                 </div>
               </div>
             </div>
+          </div>
+
+          <div className="bg-white rounded-3xl p-6 md:p-8 shadow-sm border border-blue-100 mb-8 relative z-10">
+            <div className="flex items-center gap-3 mb-2">
+              <Ticket className="w-6 h-6 text-[#4285F4]" />
+              <h2 className="text-2xl font-bold text-slate-800">Đổi quà bằng Gift Code</h2>
+            </div>
+            <p className="text-slate-500 mb-5">Nhập mã quà tặng bạn nhận được từ ban tổ chức.</p>
+            <form onSubmit={redeemGiftCode} className="flex flex-col sm:flex-row gap-3 max-w-2xl">
+              <input value={giftCode} onChange={e => setGiftCode(e.target.value.toUpperCase())} maxLength={40} placeholder="Nhập gift code" className="flex-1 border border-slate-300 rounded-xl px-4 py-3 font-semibold tracking-wider uppercase focus:outline-none focus:ring-2 focus:ring-[#4285F4]/50" />
+              <button type="submit" disabled={isRedeemingCode || !giftCode.trim()} className="px-6 py-3 rounded-xl font-bold text-white bg-[#4285F4] hover:bg-blue-600 disabled:opacity-50">{isRedeemingCode ? "Đang kiểm tra..." : "Nhận quà"}</button>
+            </form>
           </div>
 
           {/* Grid Quà tặng */}

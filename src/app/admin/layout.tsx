@@ -6,7 +6,7 @@ import { onAuthStateChanged } from "firebase/auth";
 import { doc, getDoc, collection, query, where, getDocs } from "firebase/firestore";
 import { auth, db } from "@/lib/firebase";
 import Link from "next/link";
-import { Users, Calendar, LayoutDashboard, LogOut, ArrowLeft, Mail, Menu, ChevronLeft, Gift } from "lucide-react";
+import { Users, Calendar, LayoutDashboard, LogOut, ArrowLeft, Mail, Menu, ChevronLeft, Gift, Ticket } from "lucide-react";
 import { hasStaffRole, isAdminEmail } from "@/lib/admin";
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
@@ -67,6 +67,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     { name: "Người dùng", href: "/admin/users", icon: Users },
     { name: "Sự kiện", href: "/admin/events", icon: Calendar },
     { name: "Đổi quà", href: "/admin/rewards", icon: Gift },
+    { name: "Gift Code", href: "/admin/gift-codes", icon: Ticket },
     { name: "Email Marketing", href: "/admin/marketing", icon: Mail },
   ];
 
