@@ -36,14 +36,15 @@ export async function POST(req: Request) {
     const name = cleanText(body.name, 120);
     const type = cleanText(body.type, 30);
     const description = cleanText(body.description, 500);
+    const giftUrl = cleanText(body.giftUrl, 2000);
     const startsAt = new Date(body.startsAt);
     const expiresAt = new Date(body.expiresAt);
     const maxUses = Number(body.maxUses);
-    if (!code || !name || !["document", "physical", "digital", "other"].includes(type) || Number.isNaN(startsAt.getTime()) || Number.isNaN(expiresAt.getTime()) || expiresAt <= startsAt || !Number.isInteger(maxUses) || maxUses < 1) return NextResponse.json({ error: "Thông tin gift code không hợp lệ." }, { status: 400 });
+    if (!code || !name || !["document", "physical", "digital", "other"].includes(type) || (type === "document" && !giftUrl) || Number.isNaN(startsAt.getTime()) || Number.isNaN(expiresAt.getTime()) || expiresAt <= startsAt || !Number.isInteger(maxUses) || maxUses < 1) return NextResponse.json({ error: "Thông tin gift code không hợp lệ." }, { status: 400 });
     const existing = await adminDb.collection("gift_codes").where("code", "==", code).limit(1).get();
     if (!existing.empty) return NextResponse.json({ error: "Gift code này đã tồn tại." }, { status: 409 });
     const ref = adminDb.collection("gift_codes").doc();
-    await ref.set({ code, name, type, description, startsAt, expiresAt, maxUses, usedCount: 0, active: true, createdAt: new Date(), updatedAt: new Date() });
+    await ref.set({ code, name, type, description, giftUrl, startsAt, expiresAt, maxUses, usedCount: 0, active: true, createdAt: new Date(), updatedAt: new Date() });
     return NextResponse.json({ success: true, id: ref.id });
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : "";

@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { collection, query, orderBy, getDocs } from "firebase/firestore";
 import { db } from "@/lib/firebase";
-import { Gift, CheckCircle, XCircle, Search, RefreshCw } from "lucide-react";
+import { Gift, CheckCircle, XCircle, Search, RefreshCw, Mail } from "lucide-react";
 import { useNotification } from "@/components/NotificationProvider";
 
 export default function AdminRewardsPage() {
@@ -13,6 +13,10 @@ export default function AdminRewardsPage() {
   const { notify, confirm } = useNotification();
 
   const [filter, setFilter] = useState("all");
+  const [emailRequest, setEmailRequest] = useState<any | null>(null);
+  const [emailSubject, setEmailSubject] = useState("Chúc mừng bạn đã nhận được quà tặng");
+  const [emailMessage, setEmailMessage] = useState("");
+  const [isSendingEmail, setIsSendingEmail] = useState(false);
 
   const fetchRequests = async () => {
     setLoading(true);
@@ -67,6 +71,32 @@ export default function AdminRewardsPage() {
   };
 
   const filteredRequests = requests.filter(r => filter === "all" || r.status === filter);
+
+  const openEmail = (request: any) => {
+    setEmailRequest(request);
+    setEmailSubject("Chúc mừng bạn đã nhận được quà tặng");
+    setEmailMessage(request.description || `Chúc mừng bạn đã nhận được ${request.rewardName}.`);
+  };
+
+  const sendEmail = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!emailRequest) return;
+    setIsSendingEmail(true);
+    try {
+      const { auth } = await import("@/lib/firebase");
+      const idToken = await auth.currentUser?.getIdToken();
+      const res = await fetch("/api/admin/rewards/send-email", { method: "POST", headers: { "Content-Type": "application/json", Authorization: `Bearer ${idToken}` }, body: JSON.stringify({ requestId: emailRequest.id, subject: emailSubject, message: emailMessage }) });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Lỗi hệ thống");
+      notify(data.message, "success");
+      setRequests(prev => prev.map(item => item.id === emailRequest.id ? { ...item, status: "completed" } : item));
+      setEmailRequest(null);
+    } catch (error: any) {
+      notify(error.message, "error");
+    } finally {
+      setIsSendingEmail(false);
+    }
+  };
 
   return (
     <div>
@@ -137,6 +167,7 @@ export default function AdminRewardsPage() {
                       <div className="text-sm text-red-500 font-semibold">-{req.pointsUsed} điểm</div>
                     </td>
                     <td className="p-4 max-w-xs">
+                      {req.giftCodeId && <div className="text-xs font-bold text-blue-600 mb-1">Gift Code</div>}
                       {req.type === 'physical' ? (
                         <>
                           <div className="font-semibold text-slate-700">SĐT: {req.phone}</div>
@@ -162,6 +193,9 @@ export default function AdminRewardsPage() {
                     <td className="p-4">
                       {req.status !== 'rejected' && req.status !== 'completed' && (
                         <div className="flex flex-col gap-2">
+                          {req.giftCodeId && (
+                            <button onClick={() => openEmail(req)} disabled={processingId === req.id} className="w-full text-xs font-bold py-1.5 px-3 bg-indigo-100 text-indigo-700 rounded hover:bg-indigo-200 transition-colors flex items-center justify-center gap-1"><Mail className="w-3 h-3" /> Soạn & gửi email</button>
+                          )}
                           {req.status === 'pending' && (
                             <button 
                               onClick={() => updateStatus(req.id, 'processing')}
@@ -195,6 +229,20 @@ export default function AdminRewardsPage() {
           </table>
         </div>
       </div>
+
+      {emailRequest && (
+        <div className="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4">
+          <form onSubmit={sendEmail} className="bg-white rounded-2xl p-6 w-full max-w-xl shadow-2xl">
+            <h2 className="text-xl font-bold text-slate-800 mb-1">Gửi quà cho {emailRequest.userFullName}</h2>
+            <p className="text-sm text-slate-500 mb-5">{emailRequest.userEmail} · {emailRequest.rewardName}</p>
+            <label className="block text-sm font-semibold text-slate-700 mb-1">Tiêu đề email</label>
+            <input required value={emailSubject} onChange={e => setEmailSubject(e.target.value)} className="w-full border rounded-lg p-3 mb-4" />
+            <label className="block text-sm font-semibold text-slate-700 mb-1">Nội dung / hướng dẫn nhận quà</label>
+            <textarea required value={emailMessage} onChange={e => setEmailMessage(e.target.value)} className="w-full border rounded-lg p-3 min-h-36 mb-5" />
+            <div className="flex gap-3 justify-end"><button type="button" onClick={() => setEmailRequest(null)} disabled={isSendingEmail} className="px-4 py-2 rounded-lg bg-slate-100 text-slate-700 font-semibold">Hủy</button><button type="submit" disabled={isSendingEmail} className="px-4 py-2 rounded-lg bg-[#4285F4] text-white font-bold flex items-center gap-2"><Mail className="w-4 h-4" />{isSendingEmail ? "Đang gửi..." : "Gửi email"}</button></div>
+          </form>
+        </div>
+      )}
     </div>
   );
 }

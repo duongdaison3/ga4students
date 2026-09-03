@@ -155,7 +155,7 @@ export default function RewardStorePage() {
       if (!res.ok) throw new Error(data.error || "Lỗi hệ thống");
       notify(data.message, "success");
       setGiftCode("");
-      const newRecord = { id: "gift_" + Date.now(), rewardName: data.message.replace("Nhận quà thành công: ", "").replace(". Admin sẽ liên hệ với bạn sớm.", ""), pointsUsed: 0, status: "pending", createdAt: { seconds: Date.now() / 1000 } };
+      const newRecord = { id: "gift_" + Date.now(), rewardName: data.message.replace("Nhận quà thành công: ", "").replace(". Admin sẽ liên hệ với bạn sớm.", ""), pointsUsed: 0, status: data.autoCompleted ? "completed" : "pending", createdAt: { seconds: Date.now() / 1000 } };
       setHistory(prev => [newRecord, ...prev]);
     } catch (error: any) {
       notify(error.message, "error");

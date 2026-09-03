@@ -5,8 +5,8 @@ import { auth } from "@/lib/firebase";
 import { RefreshCw, Ticket, Trash2, Power } from "lucide-react";
 import { useNotification } from "@/components/NotificationProvider";
 
-type GiftCode = { id: string; code: string; name: string; type: string; description: string; startsAt: { seconds: number }; expiresAt: { seconds: number }; maxUses: number; usedCount: number; active: boolean };
-const initialForm = { code: "", name: "", type: "document", description: "", startsAt: "", expiresAt: "", maxUses: "1" };
+type GiftCode = { id: string; code: string; name: string; type: string; description: string; giftUrl?: string; startsAt: { seconds: number }; expiresAt: { seconds: number }; maxUses: number; usedCount: number; active: boolean };
+const initialForm = { code: "", name: "", type: "document", description: "", giftUrl: "", startsAt: "", expiresAt: "", maxUses: "1" };
 
 function dateValue(timestamp?: { seconds: number }) { return timestamp?.seconds ? new Date(timestamp.seconds * 1000).toLocaleString("vi-VN") : "N/A"; }
 
@@ -59,6 +59,7 @@ export default function AdminGiftCodesPage() {
       <label className="text-sm text-slate-500">Có hiệu lực từ<input required type="datetime-local" value={form.startsAt} onChange={e => setForm({ ...form, startsAt: e.target.value })} className="block w-full border rounded-lg p-3 mt-1 text-slate-800" /></label>
       <label className="text-sm text-slate-500">Hết hiệu lực lúc<input required type="datetime-local" value={form.expiresAt} onChange={e => setForm({ ...form, expiresAt: e.target.value })} className="block w-full border rounded-lg p-3 mt-1 text-slate-800" /></label>
       <textarea placeholder="Mô tả hoặc hướng dẫn nhận quà" value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} className="border rounded-lg p-3 md:col-span-2 min-h-20" />
+      {form.type === "document" && <input required type="url" placeholder="Link tài liệu (bắt buộc với loại Tài liệu)" value={form.giftUrl || ""} onChange={e => setForm({ ...form, giftUrl: e.target.value })} className="border rounded-lg p-3 md:col-span-2" />}
       <button disabled={saving} className="md:col-span-2 bg-[#4285F4] text-white rounded-lg p-3 font-bold disabled:opacity-50">{saving ? "Đang tạo..." : "Tạo Gift Code"}</button>
     </form>
     <div className="bg-white rounded-2xl border border-slate-200 overflow-x-auto"><table className="w-full text-left"><thead className="bg-slate-50 text-sm text-slate-600"><tr><th className="p-4">Mã / Phần quà</th><th className="p-4">Loại</th><th className="p-4">Hiệu lực</th><th className="p-4">Đã dùng</th><th className="p-4">Trạng thái</th><th className="p-4">Thao tác</th></tr></thead><tbody>{tableContent}</tbody></table></div>
