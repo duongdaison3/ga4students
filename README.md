@@ -75,9 +75,14 @@ FIREBASE_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\n...\n-----END PRIVATE KEY----
 EMAIL_USER=
 EMAIL_APP_PASSWORD=
 EMAIL_FROM=
+# Tùy chọn: tài khoản Gmail dự phòng khi tài khoản chính hết hạn mức
+EMAIL_USER_2=
+EMAIL_APP_PASSWORD_2=
+EMAIL_FROM_2=
 ```
 
 `FIREBASE_PRIVATE_KEY` phải giữ các ký tự xuống dòng dưới dạng `\n`. `EMAIL_FROM` là tùy chọn; nếu bỏ trống, hệ thống dùng `EMAIL_USER` làm địa chỉ gửi.
+Nếu cấu hình `EMAIL_USER_2` và `EMAIL_APP_PASSWORD_2`, hệ thống sẽ tự động thử tài khoản thứ hai khi Gmail chính trả về lỗi `5.4.5 Daily user sending limit exceeded`. Mỗi tài khoản cần dùng App Password riêng và đã bật xác minh 2 bước.
 
 ## Các lệnh thường dùng
 

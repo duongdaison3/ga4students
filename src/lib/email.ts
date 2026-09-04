@@ -1,14 +1,57 @@
 import nodemailer from "nodemailer";
 
-const senderAddress = process.env.EMAIL_FROM || process.env.EMAIL_USER;
+type MailAccount = {
+  transporter: nodemailer.Transporter;
+  senderAddress: string;
+};
 
-const transporter = nodemailer.createTransport({
-  service: "gmail",
-  auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_APP_PASSWORD,
-  },
-});
+const createMailAccount = (user?: string, password?: string, from?: string): MailAccount | null => {
+  if (!user || !password) return null;
+
+  return {
+    transporter: nodemailer.createTransport({
+      service: "gmail",
+      auth: { user, pass: password },
+    }),
+    senderAddress: from || user,
+  };
+};
+
+const mailAccounts = [
+  createMailAccount(process.env.EMAIL_USER, process.env.EMAIL_APP_PASSWORD, process.env.EMAIL_FROM),
+  createMailAccount(process.env.EMAIL_USER_2, process.env.EMAIL_APP_PASSWORD_2, process.env.EMAIL_FROM_2),
+].filter((account): account is MailAccount => account !== null);
+
+const isDailyLimitError = (error: unknown) => {
+  const mailError = error as { response?: string; message?: string };
+  const details = `${mailError.response || ""} ${mailError.message || ""}`.toLowerCase();
+  return details.includes("5.4.5") || details.includes("daily user sending limit exceeded");
+};
+
+const sendMailWithFallback = async (mailOptions: nodemailer.SendMailOptions, label: string) => {
+  if (mailAccounts.length === 0) {
+    throw new Error("Chưa cấu hình tài khoản gửi email.");
+  }
+
+  let lastError: unknown;
+  for (const [index, account] of mailAccounts.entries()) {
+    try {
+      const info = await account.transporter.sendMail({
+        ...mailOptions,
+        from: `"Gemini Academy" <${account.senderAddress}>`,
+      });
+      if (index > 0) console.warn(`[mail] ${label} đã chuyển sang tài khoản email dự phòng`);
+      return info;
+    } catch (error) {
+      lastError = error;
+      const hasFallback = index < mailAccounts.length - 1;
+      if (!hasFallback || !isDailyLimitError(error)) throw error;
+      console.warn(`[mail] ${label} gặp giới hạn gửi, đang thử tài khoản dự phòng`);
+    }
+  }
+
+  throw lastError;
+};
 
 const logEmailResult = (label: string, info: nodemailer.SentMessageInfo) => {
   console.info(`[mail] ${label}`, {
@@ -24,11 +67,10 @@ export const sendAccountEmail = async (email: string, fullName: string, setPassw
   try {
     const urlObj = new URL(setPasswordLink);
     loginUrl = `${urlObj.origin}/dang-nhap`;
-  } catch (e) {
+  } catch {
     // fallback if parsing fails
   }
   const mailOptions = {
-    from: `"Gemini Academy" <${senderAddress}>`,
     to: email,
     subject: "[QUAN TRỌNG] Chào mừng đến với Gemini Academy for Students - Kích hoạt tài khoản",
     text: `Xin chào ${fullName},\n\nCảm ơn bạn đã đăng ký tham gia chương trình Google Gemini for Student được tổ chức bởi Pea Dương - GSA Trainer tại Google. Tài khoản của bạn đã được tạo thành công.\n\nVui lòng đặt mật khẩu bằng liên kết sau: ${setPasswordLink}\n\nSau khi đặt mật khẩu, bạn có thể đăng nhập tại: ${loginUrl}\n\nBạn vui lòng tham gia nhóm lớp học trên nền tảng MS Team bằng cách truy cập vào link sau:\nhttps://teams.microsoft.com/l/team/19%3AGxBewz-UCQwSGKyhFNDv6-WOtt13x2wS17yCjen4UQY1%40thread.tacv2/conversations?groupId=120d9962-ae60-4a85-81de-783b3ca2fd5f&tenantId=60900ae5-d282-4ecb-9134-bf478d1b93c1\n\nNếu bạn không yêu cầu đăng ký, vui lòng bỏ qua email này.`,
@@ -54,7 +96,7 @@ export const sendAccountEmail = async (email: string, fullName: string, setPassw
     `,
   };
 
-  const info = await transporter.sendMail(mailOptions);
+  const info = await sendMailWithFallback(mailOptions, "Account email");
   logEmailResult("Account email", info);
   return info;
 };
@@ -70,7 +112,6 @@ export const sendWorkshopRegistrationEmail = async (
     : (eventData?.location || "Chưa cập nhật");
 
   const mailOptions = {
-    from: `"Gemini Academy" <${senderAddress}>`,
     to: email,
     subject: `Xác nhận đăng ký thành công: ${workshopTitle}`,
     text: `Xin chào ${fullName},\n\nBạn đã đăng ký thành công buổi đào tạo: ${workshopTitle}.\n\nVui lòng theo dõi email để nhận thông tin tham gia.`,
@@ -97,7 +138,7 @@ export const sendWorkshopRegistrationEmail = async (
     `,
   };
 
-  const info = await transporter.sendMail(mailOptions);
+  const info = await sendMailWithFallback(mailOptions, "Workshop email");
   logEmailResult("Workshop email", info);
   return info;
 };
@@ -113,13 +154,12 @@ export const sendGiftCodeEmail = async (
   const link = giftUrl ? `\n\nLink quà tặng: ${giftUrl}` : "";
   const registerUrl = `${process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"}/dang-ky`;
   const text = `Xin chào ${fullName},\n\nChúc mừng bạn đã nhận được: ${giftName}.${description ? `\n\nThông tin quà tặng: ${description}` : ""}${link}\n\nBạn có thể đăng ký tài khoản để theo dõi lịch sử nhận quà: ${registerUrl}\n\nTrân trọng,\nGemini Academy for Students`;
-  const info = await transporter.sendMail({
-    from: `"Gemini Academy" <${senderAddress}>`,
+  const info = await sendMailWithFallback({
     to: email,
     subject,
     text,
     html: `<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 24px; color: #334155;"><h2 style="color: #4285F4;">Gemini Academy for Students</h2><p>Xin chào <strong>${fullName}</strong>,</p><p>Chúc mừng bạn đã nhận được:</p><p style="font-size: 18px; font-weight: bold;">${giftName}</p>${description ? `<p>${description}</p>` : ""}${giftUrl ? `<p><a href="${giftUrl}" style="color: #4285F4; font-weight: bold;">Mở link quà tặng</a></p><p style="word-break: break-all;">${giftUrl}</p>` : ""}<p>Nếu bạn chưa có tài khoản, hãy <a href="${registerUrl}" style="color: #4285F4; font-weight: bold;">đăng ký tại đây</a> để theo dõi lịch sử nhận quà.</p><p>Trân trọng,<br />Gemini Academy for Students</p></div>`,
-  });
+  }, "Gift code email");
   logEmailResult("Gift code email", info);
   return info;
 };
@@ -141,7 +181,6 @@ export const sendPersonalizedMarketingEmail = async (
       .replace(/class="ql-size-huge"/g, 'style="font-size:2em;"');
 
     const mailOptions = {
-      from: `"Gemini Academy" <${senderAddress}>`,
       to: recipient.email,
       subject: subject,
       html: `<!DOCTYPE html>
@@ -183,7 +222,7 @@ export const sendPersonalizedMarketingEmail = async (
     };
 
     try {
-      const info = await transporter.sendMail(mailOptions);
+      const info = await sendMailWithFallback(mailOptions, "Personalized marketing email");
       return { success: true, email: recipient.email, info };
     } catch (error) {
       console.error(`Lỗi gửi mail cho ${recipient.email}:`, error);
@@ -192,31 +231,31 @@ export const sendPersonalizedMarketingEmail = async (
   });
 
   const results = await Promise.all(promises);
-  logEmailResult("Personalized Marketing email batch completed", { messageId: "batch", accepted: [], rejected: [], response: `${results.filter(r => r.success).length} succeeded` } as any);
+  logEmailResult("Personalized Marketing email batch completed", { messageId: "batch", accepted: [], rejected: [], response: `${results.filter(r => r.success).length} succeeded` });
   return results;
 };
 
 export const sendEventInvitationEmail = async (
   email: string,
   fullName: string,
-  event: any,
+  event: { title?: string; description?: string; time?: string; date?: string; location?: string } | undefined,
   eventLink: string
 ) => {
+  const eventTitle = event?.title || "Sự kiện";
   const mailOptions = {
-    from: `"Gemini Academy" <${senderAddress}>`,
     to: email,
-    subject: `[THƯ MỜI] ĐĂNG KÝ THAM GIA LỚP HỌC - ${event.title.toUpperCase()}`,
+    subject: `[THƯ MỜI] ĐĂNG KÝ THAM GIA LỚP HỌC - ${eventTitle.toUpperCase()}`,
     html: `
       <div style="font-family: Arial, sans-serif; color: #334155; line-height: 1.6; max-width: 600px; margin: 0 auto; padding: 20px;">
         <h2 style="color: #4285F4; text-align: center; font-size: 24px; margin-bottom: 30px;">Gemini Academy for Students</h2>
         
         <p>Xin chào <strong>${fullName}</strong>,</p>
         
-        <p>Gemini Academy for Students trân trọng mời bạn đăng ký tham gia workshop <strong>${event.title}</strong>. ${event.description || ""}</p>
+        <p>Gemini Academy for Students trân trọng mời bạn đăng ký tham gia workshop <strong>${eventTitle}</strong>. ${event?.description || ""}</p>
         
         <div style="margin: 25px 0;">
-          <p style="margin: 10px 0;">📅 <strong>Thời gian:</strong> ${event.time}, ngày <strong>${event.date}</strong></p>
-          <p style="margin: 10px 0;">💻 <strong>Hình thức:</strong> ${event.location}</p>
+          <p style="margin: 10px 0;">📅 <strong>Thời gian:</strong> ${event?.time || "Chưa cập nhật"}, ngày <strong>${event?.date || "Chưa cập nhật"}</strong></p>
+          <p style="margin: 10px 0;">💻 <strong>Hình thức:</strong> ${event?.location || "Chưa cập nhật"}</p>
         </div>
         
         <p>👉 <strong>Đăng ký ngay</strong> để giữ chỗ và nhận thông tin tham gia qua email.</p>
@@ -242,7 +281,7 @@ export const sendEventInvitationEmail = async (
   };
 
   try {
-    const info = await transporter.sendMail(mailOptions);
+    const info = await sendMailWithFallback(mailOptions, "Event invitation email");
     logEmailResult("Event Invitation Email", info);
     return true;
   } catch (error) {
