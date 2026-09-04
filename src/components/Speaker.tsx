@@ -35,7 +35,7 @@ const SPEAKERS = [
     achievements: [
       { text: "Top 5 Đại sứ Sinh viên Google", icon: Award, colorClass: "text-[#4285F4]", bgClass: "bg-blue-100" },
       { text: "GSA Trainer", icon: Briefcase, colorClass: "text-[#34A853]", bgClass: "bg-green-100" },
-      { text: "Mentor Chương trình GSA Mùa 2", icon: BookOpen, colorClass: "text-[#FBBC05]", bgClass: "bg-yellow-100" }
+      { text: "Đại sứ tích cực Mùa 1", icon: BookOpen, colorClass: "text-[#FBBC05]", bgClass: "bg-yellow-100" }
     ]
   }
 ];
