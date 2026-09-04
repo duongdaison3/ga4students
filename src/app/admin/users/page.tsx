@@ -199,14 +199,17 @@ export default function AdminUsers() {
 
   return (
     <div>
-      <div className="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4">
-        <h2 className="text-2xl font-bold text-slate-800">Quản lý Người dùng</h2>
+      <div className="mb-6 flex flex-col gap-4 lg:mb-8 lg:flex-row lg:items-center lg:justify-between">
+        <div>
+          <h2 className="text-2xl font-bold text-slate-800">Quản lý Người dùng</h2>
+          <p className="mt-1 text-sm text-slate-500">{filteredUsers.length} người dùng được hiển thị</p>
+        </div>
         
-        <div className="flex flex-col sm:flex-row items-center gap-3">
+        <div className="flex w-full flex-col gap-3 sm:flex-row sm:items-center lg:w-auto">
           <select 
             value={roleFilter}
             onChange={(e) => setRoleFilter(e.target.value)}
-            className="px-4 py-2 border border-slate-200 rounded-lg bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-[#4285F4] w-full sm:w-auto"
+            className="w-full rounded-lg border border-slate-200 bg-white px-4 py-2 text-slate-700 focus:outline-none focus:ring-2 focus:ring-[#4285F4] sm:w-auto"
           >
             <option value="all">Tất cả vai trò</option>
             <option value="student">Sinh viên</option>
@@ -214,38 +217,38 @@ export default function AdminUsers() {
             <option value="admin">Quản trị viên</option>
           </select>
 
-          <div className="relative w-full sm:w-auto">
+          <div className="relative w-full sm:min-w-64 sm:flex-1 lg:flex-none">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-            <input 
+            <input
               type="text" 
               placeholder="Tìm kiếm..." 
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10 pr-4 py-2 border border-slate-200 rounded-lg w-full sm:w-64 focus:outline-none focus:ring-2 focus:ring-[#4285F4] focus:border-transparent"
+              className="w-full rounded-lg border border-slate-200 py-2 pl-10 pr-4 focus:outline-none focus:ring-2 focus:ring-[#4285F4] focus:border-transparent"
             />
           </div>
 
           <button 
             onClick={handleExportCSV}
-            className="flex items-center justify-center gap-2 px-4 py-2 bg-green-50 text-green-700 border border-green-200 rounded-lg hover:bg-green-100 transition-colors w-full sm:w-auto font-medium"
+            className="flex w-full items-center justify-center gap-2 rounded-lg border border-green-200 bg-green-50 px-4 py-2 font-medium text-green-700 transition-colors hover:bg-green-100 sm:w-auto"
           >
             <Download className="w-4 h-4" /> Xuất CSV
           </button>
         </div>
       </div>
 
-      <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse">
+      <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+        <div className="overflow-x-auto overscroll-x-contain">
+          <table className="w-full min-w-[980px] table-fixed border-collapse text-left">
             <thead>
-              <tr className="bg-slate-50 border-b border-slate-200 text-sm font-semibold text-slate-600">
-                <th className="p-4 whitespace-nowrap">Họ và Tên</th>
-                <th className="p-4 whitespace-nowrap">Email</th>
-                <th className="p-4 whitespace-nowrap">SĐT</th>
-                <th className="p-4 min-w-[200px]">Trường ĐH / CĐ</th>
-                <th className="p-4 whitespace-nowrap">Ngày đăng ký</th>
-                <th className="p-4 whitespace-nowrap">Vai trò</th>
-                <th className="p-4 text-center whitespace-nowrap">Hành động</th>
+              <tr className="border-b border-slate-200 bg-slate-50 text-sm font-semibold text-slate-600">
+                <th className="w-[170px] whitespace-nowrap p-3 md:p-4">Họ và Tên</th>
+                <th className="w-[240px] whitespace-nowrap p-3 md:p-4">Email</th>
+                <th className="w-[125px] whitespace-nowrap p-3 md:p-4">SĐT</th>
+                <th className="w-[220px] p-3 md:p-4">Trường ĐH / CĐ</th>
+                <th className="w-[130px] whitespace-nowrap p-3 md:p-4">Ngày đăng ký</th>
+                <th className="w-[150px] whitespace-nowrap p-3 md:p-4">Vai trò</th>
+                <th className="sticky right-0 z-10 w-[130px] whitespace-nowrap border-l border-slate-200 bg-slate-50 p-3 text-center md:p-4">Hành động</th>
               </tr>
             </thead>
             <tbody>
@@ -258,20 +261,20 @@ export default function AdminUsers() {
                   <td colSpan={7} className="p-8 text-center text-slate-500">Không tìm thấy người dùng nào.</td>
                 </tr>
               ) : (
-                filteredUsers.map((user, idx) => (
+                filteredUsers.map((user) => (
                   <tr key={user.id} className="border-b border-slate-100 hover:bg-slate-50">
-                    <td className="p-4 font-medium text-slate-900 whitespace-nowrap">{user.fullName}</td>
-                    <td className="p-4 text-slate-600 whitespace-nowrap">{user.email}</td>
-                    <td className="p-4 text-slate-600 whitespace-nowrap">{user.phone}</td>
-                    <td className="p-4 text-slate-600">
-                      <div className="max-w-[200px] sm:max-w-[250px] truncate" title={user.university}>
+                    <td className="max-w-0 truncate p-3 font-medium text-slate-900 md:p-4" title={user.fullName}>{user.fullName}</td>
+                    <td className="max-w-0 truncate p-3 text-slate-600 md:p-4" title={user.email}>{user.email}</td>
+                    <td className="max-w-0 truncate p-3 text-slate-600 md:p-4" title={user.phone}>{user.phone}</td>
+                    <td className="max-w-0 p-3 text-slate-600 md:p-4">
+                      <div className="truncate" title={user.university}>
                         {user.university}
                       </div>
                     </td>
-                    <td className="p-4 text-slate-500 text-sm whitespace-nowrap">
+                    <td className="whitespace-nowrap p-3 text-sm text-slate-500 md:p-4">
                       {user.createdAt?.seconds ? new Date(user.createdAt.seconds * 1000).toLocaleDateString("vi-VN") : "N/A"}
                     </td>
-                    <td className="p-4">
+                    <td className="p-3 md:p-4">
                       <select 
                         value={user.role || 'student'}
                         onChange={(e) => handleRoleChange(user.id, e.target.value)}
@@ -282,7 +285,7 @@ export default function AdminUsers() {
                         <option value="admin">Quản trị viên</option>
                       </select>
                     </td>
-                    <td className="p-4 text-center">
+                    <td className="sticky right-0 z-10 border-l border-slate-100 bg-white p-3 text-center md:p-4">
                       <div className="flex items-center justify-center gap-1">
                         <button
                           onClick={() => handleResetPassword(user)}
