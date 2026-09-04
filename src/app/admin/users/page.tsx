@@ -168,14 +168,14 @@ export default function AdminUsers() {
       return;
     }
 
-    const headers = ["Họ và Tên", "Email", "SĐT", "Trường", "Vai trò", "Ngày đăng ký"];
+    const headers = ["Họ và Tên", "Email", "SĐT", "Trường", "Vai trò", "Thời gian đăng ký"];
     const rows = filteredUsers.map(u => [
       `"${u.fullName || ''}"`,
       `"${u.email || ''}"`,
       `"${u.phone || ''}"`,
       `"${u.university || ''}"`,
       `"${u.role || 'student'}"`,
-      `"${u.createdAt?.seconds ? new Date(u.createdAt.seconds * 1000).toLocaleDateString("vi-VN") : ''}"`
+      `"${u.createdAt?.seconds ? new Date(u.createdAt.seconds * 1000).toLocaleString("vi-VN") : ''}"`
     ]);
 
     const csvContent = [
@@ -276,13 +276,13 @@ export default function AdminUsers() {
 
   return (
     <div>
-      <div className="mb-6 flex flex-col gap-4 lg:mb-8 lg:flex-row lg:items-center lg:justify-between">
-        <div>
+      <div className="mb-6 flex min-w-0 flex-col gap-4 lg:mb-8 lg:flex-row lg:items-start lg:justify-between">
+        <div className="min-w-0">
           <h2 className="text-2xl font-bold text-slate-800">Quản lý Người dùng</h2>
           <p className="mt-1 text-sm text-slate-500">{filteredUsers.length} người dùng được hiển thị</p>
         </div>
         
-        <div className="flex w-full flex-col gap-3 sm:flex-row sm:items-center lg:w-auto">
+        <div className="flex w-full min-w-0 flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center lg:w-auto lg:max-w-full lg:justify-end">
           <select 
             value={roleFilter}
             onChange={(e) => setRoleFilter(e.target.value)}
@@ -294,7 +294,7 @@ export default function AdminUsers() {
             <option value="admin">Quản trị viên</option>
           </select>
 
-          <div className="relative w-full sm:min-w-64 sm:flex-1 lg:flex-none">
+          <div className="relative w-full min-w-0 sm:min-w-64 sm:flex-1 lg:w-64 lg:flex-none">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
             <input
               type="text" 
@@ -362,7 +362,7 @@ export default function AdminUsers() {
                 <th className="w-[240px] whitespace-nowrap p-3 md:p-4">Email</th>
                 <th className="w-[125px] whitespace-nowrap p-3 md:p-4">SĐT</th>
                 <th className="w-[220px] p-3 md:p-4">Trường ĐH / CĐ</th>
-                <th className="w-[130px] whitespace-nowrap p-3 md:p-4">Ngày đăng ký</th>
+                <th className="w-[165px] whitespace-nowrap p-3 md:p-4">Thời gian đăng ký</th>
                 <th className="w-[150px] whitespace-nowrap p-3 md:p-4">Vai trò</th>
                 <th className="sticky right-0 z-10 w-[130px] whitespace-nowrap border-l border-slate-200 bg-slate-50 p-3 text-center md:p-4">Hành động</th>
               </tr>
@@ -397,7 +397,7 @@ export default function AdminUsers() {
                       </div>
                     </td>
                     <td className="whitespace-nowrap p-3 text-sm text-slate-500 md:p-4">
-                      {user.createdAt?.seconds ? new Date(user.createdAt.seconds * 1000).toLocaleDateString("vi-VN") : "N/A"}
+                      {user.createdAt?.seconds ? new Date(user.createdAt.seconds * 1000).toLocaleString("vi-VN") : "N/A"}
                     </td>
                     <td className="p-3 md:p-4">
                       <select 
