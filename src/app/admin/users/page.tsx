@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { collection, getDocs, query, orderBy, doc, updateDoc } from "firebase/firestore";
 import { db, auth } from "@/lib/firebase";
-import { Search, Trash2, Download, Edit, Key, X } from "lucide-react";
+import { Search, Trash2, Download, Edit, Key, X, Mail } from "lucide-react";
 import { useNotification } from "@/components/NotificationProvider";
 
 export default function AdminUsers() {
@@ -12,6 +12,8 @@ export default function AdminUsers() {
   const [searchTerm, setSearchTerm] = useState("");
   const [roleFilter, setRoleFilter] = useState("all");
   const [isDeleting, setIsDeleting] = useState<string | null>(null);
+  const [selectedUserIds, setSelectedUserIds] = useState<string[]>([]);
+  const [isBulkProcessing, setIsBulkProcessing] = useState(false);
 
   // Edit User State
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -76,12 +78,87 @@ export default function AdminUsers() {
       }
       
       setUsers(prev => prev.filter(u => u.id !== userId));
+      setSelectedUserIds(prev => prev.filter(id => id !== userId));
       notify("Đã xóa người dùng thành công.", "success");
     } catch (error: any) {
       console.error("Error deleting user:", error);
       notify(error.message || "Đã xảy ra lỗi khi xóa người dùng.", "error");
     } finally {
       setIsDeleting(null);
+    }
+  };
+
+  const toggleUserSelection = (userId: string) => {
+    setSelectedUserIds(prev => prev.includes(userId)
+      ? prev.filter(id => id !== userId)
+      : [...prev, userId]);
+  };
+
+  const toggleAllFilteredUsers = () => {
+    const filteredIds = filteredUsers.map(user => user.id);
+    const allSelected = filteredIds.length > 0 && filteredIds.every(id => selectedUserIds.includes(id));
+    setSelectedUserIds(prev => allSelected
+      ? prev.filter(id => !filteredIds.includes(id))
+      : [...new Set([...prev, ...filteredIds])]);
+  };
+
+  const getAdminToken = async () => {
+    const currentUser = auth.currentUser;
+    if (!currentUser) throw new Error("Chưa đăng nhập");
+    return currentUser.getIdToken();
+  };
+
+  const handleBulkResetPassword = async () => {
+    const selectedUsers = users.filter(user => selectedUserIds.includes(user.id));
+    if (selectedUsers.length === 0) return;
+    if (!await confirm(`Gửi lại email đặt mật khẩu cho ${selectedUsers.length} user đã chọn? Email sẽ được gửi tuần tự để tránh vượt hạn mức Brevo.`)) return;
+
+    setIsBulkProcessing(true);
+    let successCount = 0;
+    try {
+      const idToken = await getAdminToken();
+      for (let index = 0; index < selectedUsers.length; index += 10) {
+        const batch = selectedUsers.slice(index, index + 10);
+        const results = await Promise.all(batch.map(async user => {
+          const response = await fetch(`/api/admin/users/${user.id}/reset-password`, {
+            method: "POST",
+            headers: { "Authorization": `Bearer ${idToken}` },
+          });
+          return response.ok;
+        }));
+        successCount += results.filter(Boolean).length;
+      }
+      notify(`Đã gửi ${successCount}/${selectedUsers.length} email đặt mật khẩu.`, successCount === selectedUsers.length ? "success" : "error");
+      setSelectedUserIds([]);
+    } catch (error: any) {
+      notify(error.message || `Đã gửi ${successCount}/${selectedUsers.length} email.`, "error");
+    } finally {
+      setIsBulkProcessing(false);
+    }
+  };
+
+  const handleBulkDelete = async () => {
+    if (selectedUserIds.length === 0) return;
+    if (!await confirm(`Xóa vĩnh viễn ${selectedUserIds.length} user đã chọn cùng dữ liệu liên quan?`)) return;
+
+    setIsBulkProcessing(true);
+    let successCount = 0;
+    try {
+      const idToken = await getAdminToken();
+      for (const userId of selectedUserIds) {
+        const response = await fetch(`/api/admin/users/${userId}`, {
+          method: "DELETE",
+          headers: { "Authorization": `Bearer ${idToken}` },
+        });
+        if (response.ok) successCount += 1;
+      }
+      setUsers(prev => prev.filter(user => !selectedUserIds.includes(user.id)));
+      setSelectedUserIds([]);
+      notify(`Đã xóa ${successCount} user.`, successCount === selectedUserIds.length ? "success" : "error");
+    } catch (error: any) {
+      notify(error.message || `Đã xóa ${successCount}/${selectedUserIds.length} user.`, "error");
+    } finally {
+      setIsBulkProcessing(false);
     }
   };
 
@@ -237,11 +314,50 @@ export default function AdminUsers() {
         </div>
       </div>
 
+      {selectedUserIds.length > 0 && (
+        <div className="mb-4 flex flex-col gap-3 rounded-xl border border-blue-200 bg-blue-50 p-3 text-sm text-blue-900 sm:flex-row sm:items-center sm:justify-between">
+          <span className="font-medium">Đã chọn {selectedUserIds.length} user</span>
+          <div className="flex flex-wrap gap-2">
+            <button
+              onClick={handleBulkResetPassword}
+              disabled={isBulkProcessing}
+              className="flex items-center gap-2 rounded-lg bg-[#4285F4] px-3 py-2 font-medium text-white transition-colors hover:bg-blue-600 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              <Mail className="h-4 w-4" />
+              {isBulkProcessing ? "Đang xử lý..." : "Gửi lại email mật khẩu"}
+            </button>
+            <button
+              onClick={handleBulkDelete}
+              disabled={isBulkProcessing}
+              className="flex items-center gap-2 rounded-lg border border-red-200 bg-white px-3 py-2 font-medium text-red-600 transition-colors hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              <Trash2 className="h-4 w-4" /> Xóa đã chọn
+            </button>
+            <button
+              onClick={() => setSelectedUserIds([])}
+              disabled={isBulkProcessing}
+              className="rounded-lg px-3 py-2 font-medium text-slate-600 hover:bg-white disabled:opacity-50"
+            >
+              Bỏ chọn
+            </button>
+          </div>
+        </div>
+      )}
+
       <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
         <div className="overflow-x-auto overscroll-x-contain">
           <table className="w-full min-w-[980px] table-fixed border-collapse text-left">
             <thead>
               <tr className="border-b border-slate-200 bg-slate-50 text-sm font-semibold text-slate-600">
+                <th className="w-12 p-3 text-center md:p-4">
+                  <input
+                    type="checkbox"
+                    checked={filteredUsers.length > 0 && filteredUsers.every(user => selectedUserIds.includes(user.id))}
+                    onChange={toggleAllFilteredUsers}
+                    aria-label="Chọn tất cả user đang hiển thị"
+                    className="h-4 w-4 accent-[#4285F4]"
+                  />
+                </th>
                 <th className="w-[170px] whitespace-nowrap p-3 md:p-4">Họ và Tên</th>
                 <th className="w-[240px] whitespace-nowrap p-3 md:p-4">Email</th>
                 <th className="w-[125px] whitespace-nowrap p-3 md:p-4">SĐT</th>
@@ -254,15 +370,24 @@ export default function AdminUsers() {
             <tbody>
               {isLoading ? (
                 <tr>
-                  <td colSpan={7} className="p-8 text-center text-slate-500">Đang tải dữ liệu...</td>
+                  <td colSpan={8} className="p-8 text-center text-slate-500">Đang tải dữ liệu...</td>
                 </tr>
               ) : filteredUsers.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="p-8 text-center text-slate-500">Không tìm thấy người dùng nào.</td>
+                  <td colSpan={8} className="p-8 text-center text-slate-500">Không tìm thấy người dùng nào.</td>
                 </tr>
               ) : (
                 filteredUsers.map((user) => (
                   <tr key={user.id} className="border-b border-slate-100 hover:bg-slate-50">
+                    <td className="p-3 text-center md:p-4">
+                      <input
+                        type="checkbox"
+                        checked={selectedUserIds.includes(user.id)}
+                        onChange={() => toggleUserSelection(user.id)}
+                        aria-label={`Chọn ${user.fullName || user.email}`}
+                        className="h-4 w-4 accent-[#4285F4]"
+                      />
+                    </td>
                     <td className="max-w-0 truncate p-3 font-medium text-slate-900 md:p-4" title={user.fullName}>{user.fullName}</td>
                     <td className="max-w-0 truncate p-3 text-slate-600 md:p-4" title={user.email}>{user.email}</td>
                     <td className="max-w-0 truncate p-3 text-slate-600 md:p-4" title={user.phone}>{user.phone}</td>
