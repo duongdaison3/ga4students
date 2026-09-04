@@ -3,9 +3,10 @@ import nodemailer from "nodemailer";
 type MailAccount = {
   transporter: nodemailer.Transporter;
   senderAddress: string;
+  name: string;
 };
 
-const createMailAccount = (user?: string, password?: string, from?: string): MailAccount | null => {
+const createGmailAccount = (user?: string, password?: string, from?: string, name = "Gmail"): MailAccount | null => {
   if (!user || !password) return null;
 
   return {
@@ -14,12 +15,33 @@ const createMailAccount = (user?: string, password?: string, from?: string): Mai
       auth: { user, pass: password },
     }),
     senderAddress: from || user,
+    name,
+  };
+};
+
+const createSmtpAccount = (): MailAccount | null => {
+  const host = process.env.SMTP_HOST;
+  const user = process.env.SMTP_USER;
+  const password = process.env.SMTP_PASSWORD;
+  const port = Number(process.env.SMTP_PORT || 587);
+  if (!host || !user || !password) return null;
+
+  return {
+    transporter: nodemailer.createTransport({
+      host,
+      port,
+      secure: process.env.SMTP_SECURE === "true" || port === 465,
+      auth: { user, pass: password },
+    }),
+    senderAddress: process.env.SMTP_FROM || user,
+    name: "SMTP transactional",
   };
 };
 
 const mailAccounts = [
-  createMailAccount(process.env.EMAIL_USER, process.env.EMAIL_APP_PASSWORD, process.env.EMAIL_FROM),
-  createMailAccount(process.env.EMAIL_USER_2, process.env.EMAIL_APP_PASSWORD_2, process.env.EMAIL_FROM_2),
+  createSmtpAccount(),
+  createGmailAccount(process.env.EMAIL_USER, process.env.EMAIL_APP_PASSWORD, process.env.EMAIL_FROM, "Gmail chính"),
+  createGmailAccount(process.env.EMAIL_USER_2, process.env.EMAIL_APP_PASSWORD_2, process.env.EMAIL_FROM_2, "Gmail dự phòng"),
 ].filter((account): account is MailAccount => account !== null);
 
 const isDailyLimitError = (error: unknown) => {
@@ -40,7 +62,7 @@ const sendMailWithFallback = async (mailOptions: nodemailer.SendMailOptions, lab
         ...mailOptions,
         from: `"Gemini Academy" <${account.senderAddress}>`,
       });
-      if (index > 0) console.warn(`[mail] ${label} đã chuyển sang tài khoản email dự phòng`);
+      if (index > 0) console.warn(`[mail] ${label} đã chuyển sang ${account.name}`);
       return info;
     } catch (error) {
       lastError = error;

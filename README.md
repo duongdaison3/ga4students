@@ -72,17 +72,24 @@ NEXT_PUBLIC_FIREBASE_APP_ID=
 FIREBASE_CLIENT_EMAIL=
 FIREBASE_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\n...\n-----END PRIVATE KEY-----\n"
 
+# SMTP transactional chính (ví dụ Brevo SMTP)
+SMTP_HOST=smtp-relay.brevo.com
+SMTP_PORT=587
+SMTP_SECURE=false
+SMTP_USER=
+SMTP_PASSWORD=
+SMTP_FROM=
+
+# Gmail chỉ dùng dự phòng khi SMTP chính gặp lỗi giới hạn gửi
 EMAIL_USER=
 EMAIL_APP_PASSWORD=
 EMAIL_FROM=
-# Tùy chọn: tài khoản Gmail dự phòng khi tài khoản chính hết hạn mức
 EMAIL_USER_2=
 EMAIL_APP_PASSWORD_2=
 EMAIL_FROM_2=
 ```
 
-`FIREBASE_PRIVATE_KEY` phải giữ các ký tự xuống dòng dưới dạng `\n`. `EMAIL_FROM` là tùy chọn; nếu bỏ trống, hệ thống dùng `EMAIL_USER` làm địa chỉ gửi.
-Nếu cấu hình `EMAIL_USER_2` và `EMAIL_APP_PASSWORD_2`, hệ thống sẽ tự động thử tài khoản thứ hai khi Gmail chính trả về lỗi `5.4.5 Daily user sending limit exceeded`. Mỗi tài khoản cần dùng App Password riêng và đã bật xác minh 2 bước.
+`FIREBASE_PRIVATE_KEY` phải giữ các ký tự xuống dòng dưới dạng `\n`. `SMTP_FROM` phải là địa chỉ đã xác thực trên nền tảng email. Khi có đủ `SMTP_HOST`, `SMTP_USER` và `SMTP_PASSWORD`, hệ thống sẽ dùng SMTP transactional làm kênh chính. Gmail chỉ được thử tiếp khi kênh trước trả về lỗi giới hạn gửi `5.4.5`.
 
 ## Các lệnh thường dùng
 
