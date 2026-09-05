@@ -76,7 +76,7 @@ const isDailyLimitError = (error: unknown) => {
 const isBrevoQuotaExhausted = async (account: MailAccount) => {
   if (account.kind !== "brevo") return false;
 
-  const apiKey = process.env.BREVO_API_KEY || process.env.SMTP_PASSWORD;
+  const apiKey = process.env.BREVO_API_KEY;
   if (!apiKey) return false;
 
   try {
