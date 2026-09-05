@@ -81,15 +81,17 @@ SMTP_PASSWORD=
 SMTP_FROM=
 
 # Gmail chỉ dùng dự phòng khi SMTP chính gặp lỗi giới hạn gửi
-EMAIL_USER=
+EMAIL_USER=pea44.work@gmail.com
 EMAIL_APP_PASSWORD=
-EMAIL_FROM=
+EMAIL_FROM=pea44.work@gmail.com
+
+# Gmail dự phòng thứ hai khi tài khoản trên cũng hết hạn mức
 EMAIL_USER_2=
 EMAIL_APP_PASSWORD_2=
 EMAIL_FROM_2=
 ```
 
-`FIREBASE_PRIVATE_KEY` phải giữ các ký tự xuống dòng dưới dạng `\n`. `SMTP_FROM` phải là địa chỉ đã xác thực trên nền tảng email. Khi có đủ `SMTP_HOST`, `SMTP_USER` và `SMTP_PASSWORD`, hệ thống sẽ dùng SMTP transactional làm kênh chính. Gmail chỉ được thử tiếp khi kênh trước trả về lỗi giới hạn gửi `5.4.5`.
+`FIREBASE_PRIVATE_KEY` phải giữ các ký tự xuống dòng dưới dạng `\n`. `SMTP_FROM` phải là địa chỉ đã xác thực trên nền tảng email. Khi có đủ `SMTP_HOST`, `SMTP_USER` và `SMTP_PASSWORD`, hệ thống sẽ dùng SMTP transactional làm kênh chính. Khi kênh hiện tại trả về lỗi hết hạn mức (ví dụ `5.4.5`, `4.5.3`, `daily send limit` hoặc `quota exceeded`), hệ thống thử ngay tài khoản kế tiếp theo thứ tự `Brevo -> EMAIL_USER -> EMAIL_USER_2`. Mỗi Gmail cần App Password và phải có `EMAIL_FROM` tương ứng với tài khoản đã xác thực.
 
 ## Các lệnh thường dùng
 

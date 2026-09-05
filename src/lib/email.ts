@@ -44,10 +44,30 @@ const mailAccounts = [
   createGmailAccount(process.env.EMAIL_USER_2, process.env.EMAIL_APP_PASSWORD_2, process.env.EMAIL_FROM_2, "Gmail dự phòng"),
 ].filter((account): account is MailAccount => account !== null);
 
+if (mailAccounts.length === 0) {
+  console.error("[mail] Chưa có tài khoản gửi email nào được cấu hình");
+} else if (mailAccounts.length < 3) {
+  console.warn(`[mail] Chỉ có ${mailAccounts.length}/3 tài khoản gửi email được cấu hình; fallback sẽ không đầy đủ`);
+}
+
 const isDailyLimitError = (error: unknown) => {
-  const mailError = error as { response?: string; message?: string };
-  const details = `${mailError.response || ""} ${mailError.message || ""}`.toLowerCase();
-  return details.includes("5.4.5") || details.includes("daily user sending limit exceeded");
+  const mailError = error as { code?: string; responseCode?: number; response?: string; message?: string };
+  const details = `${mailError.code || ""} ${mailError.responseCode || ""} ${mailError.response || ""} ${mailError.message || ""}`.toLowerCase();
+  return (
+    details.includes("5.4.5") ||
+    details.includes("daily user sending limit exceeded") ||
+    details.includes("daily limit") ||
+    details.includes("daily send limit") ||
+    details.includes("daily sending limit") ||
+    details.includes("limit reached") ||
+    details.includes("send limit exceeded") ||
+    details.includes("quota") ||
+    details.includes("quota exceeded") ||
+    details.includes("rate limit") ||
+    details.includes("rate limit exceeded") ||
+    details.includes("too many messages") ||
+    details.includes("4.5.3")
+  );
 };
 
 const sendMailWithFallback = async (mailOptions: nodemailer.SendMailOptions, label: string) => {
