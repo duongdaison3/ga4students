@@ -79,6 +79,7 @@ SMTP_SECURE=false
 SMTP_USER=
 SMTP_PASSWORD=
 SMTP_FROM=
+BREVO_API_KEY=
 
 # Gmail chỉ dùng dự phòng khi SMTP chính gặp lỗi giới hạn gửi
 EMAIL_USER=pea44.work@gmail.com
@@ -91,7 +92,7 @@ EMAIL_APP_PASSWORD_2=
 EMAIL_FROM_2=
 ```
 
-`FIREBASE_PRIVATE_KEY` phải giữ các ký tự xuống dòng dưới dạng `\n`. `SMTP_FROM` phải là địa chỉ đã xác thực trên nền tảng email. Khi có đủ `SMTP_HOST`, `SMTP_USER` và `SMTP_PASSWORD`, hệ thống sẽ dùng SMTP transactional làm kênh chính. Khi kênh hiện tại trả về lỗi hết hạn mức (ví dụ `5.4.5`, `4.5.3`, `daily send limit` hoặc `quota exceeded`), hệ thống thử ngay tài khoản kế tiếp theo thứ tự `Brevo -> EMAIL_USER -> EMAIL_USER_2`. Mỗi Gmail cần App Password và phải có `EMAIL_FROM` tương ứng với tài khoản đã xác thực.
+`FIREBASE_PRIVATE_KEY` phải giữ các ký tự xuống dòng dưới dạng `\n`. `SMTP_FROM` phải là địa chỉ đã xác thực trên nền tảng email. Khi có đủ `SMTP_HOST`, `SMTP_USER` và `SMTP_PASSWORD`, hệ thống sẽ dùng SMTP transactional làm kênh chính. Nếu có `BREVO_API_KEY`, hệ thống kiểm tra quota Brevo trước khi gửi để chuyển ngay sang Gmail khi quota bằng 0. Khi kênh hiện tại trả về lỗi hết hạn mức (ví dụ `5.4.5`, `4.5.3`, `daily send limit` hoặc `quota exceeded`), hệ thống thử ngay tài khoản kế tiếp theo thứ tự `Brevo -> EMAIL_USER -> EMAIL_USER_2`. Mỗi Gmail cần App Password và phải có `EMAIL_FROM` tương ứng với tài khoản đã xác thực.
 
 ## Các lệnh thường dùng
 

@@ -4,6 +4,7 @@ type MailAccount = {
   transporter: nodemailer.Transporter;
   senderAddress: string;
   name: string;
+  kind: "brevo" | "gmail";
 };
 
 const createGmailAccount = (user?: string, password?: string, from?: string, name = "Gmail"): MailAccount | null => {
@@ -16,6 +17,7 @@ const createGmailAccount = (user?: string, password?: string, from?: string, nam
     }),
     senderAddress: from || user,
     name,
+    kind: "gmail",
   };
 };
 
@@ -35,6 +37,7 @@ const createSmtpAccount = (): MailAccount | null => {
     }),
     senderAddress: process.env.SMTP_FROM || user,
     name: "SMTP transactional",
+    kind: "brevo",
   };
 };
 
@@ -70,6 +73,32 @@ const isDailyLimitError = (error: unknown) => {
   );
 };
 
+const isBrevoQuotaExhausted = async (account: MailAccount) => {
+  if (account.kind !== "brevo") return false;
+
+  const apiKey = process.env.BREVO_API_KEY || process.env.SMTP_PASSWORD;
+  if (!apiKey) return false;
+
+  try {
+    const response = await fetch("https://api.brevo.com/v3/account", {
+      headers: { "api-key": apiKey, accept: "application/json" },
+      cache: "no-store",
+    });
+    if (!response.ok) return false;
+
+    const accountData = await response.json() as {
+      plan?: Array<{ credits?: number | string }>;
+    };
+    const credits = accountData.plan
+      ?.map(plan => Number(plan.credits))
+      .filter(Number.isFinite);
+    return credits?.length ? credits.every(credit => credit <= 0) : false;
+  } catch (error) {
+    console.warn("[mail] Không kiểm tra được quota Brevo, tiếp tục thử SMTP", error);
+    return false;
+  }
+};
+
 const sendMailWithFallback = async (mailOptions: nodemailer.SendMailOptions, label: string) => {
   if (mailAccounts.length === 0) {
     throw new Error("Chưa cấu hình tài khoản gửi email.");
@@ -78,16 +107,24 @@ const sendMailWithFallback = async (mailOptions: nodemailer.SendMailOptions, lab
   let lastError: unknown;
   for (const [index, account] of mailAccounts.entries()) {
     try {
+      if (await isBrevoQuotaExhausted(account)) {
+        throw new Error("Brevo đã hết quota gửi email");
+      }
+
       const info = await account.transporter.sendMail({
         ...mailOptions,
         from: `"Gemini Academy" <${account.senderAddress}>`,
       });
       if (index > 0) console.warn(`[mail] ${label} đã chuyển sang ${account.name}`);
+      console.info(`[mail] ${label} gửi qua ${account.name}`, {
+        messageId: info.messageId,
+        response: info.response,
+      });
       return info;
     } catch (error) {
       lastError = error;
       const hasFallback = index < mailAccounts.length - 1;
-      if (!hasFallback || !isDailyLimitError(error)) throw error;
+      if (!hasFallback || (!isDailyLimitError(error) && !(account.kind === "brevo" && String(error).includes("Brevo đã hết quota")))) throw error;
       console.warn(`[mail] ${label} gặp giới hạn gửi, đang thử tài khoản dự phòng`);
     }
   }
