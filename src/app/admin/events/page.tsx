@@ -43,8 +43,10 @@ export default function AdminEvents() {
     speakerId: "",
     speakerName: "",
     slideLink: "",
-    recordLink: ""
+    recordLink: "",
+    attendanceCode: ""
   });
+  const [existingAttendanceCodeHash, setExistingAttendanceCodeHash] = useState("");
 
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -88,16 +90,26 @@ export default function AdminEvents() {
 
     setIsSubmitting(true);
     try {
+      const { attendanceCode, ...eventFormData } = formData;
+      const normalizedAttendanceCode = attendanceCode.trim();
+      const attendanceCodeHash = normalizedAttendanceCode
+        ? Array.from(new Uint8Array(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(normalizedAttendanceCode.toUpperCase()))))
+          .map(byte => byte.toString(16).padStart(2, "0"))
+          .join("")
+        : existingAttendanceCodeHash;
+
       if (editEventId) {
         await updateDoc(doc(db, "events", editEventId), {
-          ...formData,
+          ...eventFormData,
+          attendanceCodeHash,
           maxParticipants,
           updatedAt: new Date()
         });
         notify("Cập nhật sự kiện thành công!", "success");
       } else {
         const newEventRef = await addDoc(collection(db, "events"), {
-          ...formData,
+          ...eventFormData,
+          attendanceCodeHash,
           maxParticipants,
           registeredCount: 0,
           createdAt: new Date()
@@ -132,9 +144,10 @@ export default function AdminEvents() {
       setFormData({
         title: "", topic: TOPICS[0], description: "", mainContent: "",
         date: "", time: "", maxParticipants: "", type: "Online", location: "Microsoft Teams", meetingLink: "", status: "opening",
-        speakerIds: [], speakerNames: [], speakerId: "", speakerName: "", slideLink: "", recordLink: ""
+        speakerIds: [], speakerNames: [], speakerId: "", speakerName: "", slideLink: "", recordLink: "", attendanceCode: ""
       });
       setEditEventId(null);
+      setExistingAttendanceCodeHash("");
     } catch (error) {
       notify("Đã xảy ra lỗi khi lưu sự kiện.", "error");
     } finally {
@@ -176,8 +189,10 @@ export default function AdminEvents() {
       speakerId: event.speakerId || event.speakerIds?.[0] || "",
       speakerName: event.speakerName || event.speakerNames?.[0] || "",
       slideLink: event.slideLink || "",
-      recordLink: event.recordLink || ""
+      recordLink: event.recordLink || "",
+      attendanceCode: ""
     });
+    setExistingAttendanceCodeHash(event.attendanceCodeHash || "");
     setEditEventId(event.id);
     setIsModalOpen(true);
   };
@@ -191,8 +206,9 @@ export default function AdminEvents() {
             setFormData({
               title: "", topic: TOPICS[0], description: "", mainContent: "",
               date: "", time: "", maxParticipants: "", type: "Online", location: "Microsoft Teams", meetingLink: "", status: "opening",
-              speakerIds: [], speakerNames: [], speakerId: "", speakerName: "", slideLink: "", recordLink: ""
+              speakerIds: [], speakerNames: [], speakerId: "", speakerName: "", slideLink: "", recordLink: "", attendanceCode: ""
             });
+            setExistingAttendanceCodeHash("");
             setEditEventId(null);
             setIsModalOpen(true);
           }}
@@ -343,6 +359,11 @@ export default function AdminEvents() {
                 <div className="space-y-2">
                   <label className="text-sm font-medium text-slate-700">Link Record (Video)</label>
                   <input type="text" placeholder="URL YouTube/Drive..." value={formData.recordLink} onChange={e => setFormData({ ...formData, recordLink: e.target.value })} className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-[#4285F4] focus:outline-none" />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-slate-700">Mã điểm danh</label>
+                  <input type="text" placeholder={editEventId && existingAttendanceCodeHash ? "Để trống để giữ mã hiện tại" : "Nhập mã dùng trong thời gian diễn ra sự kiện"} value={formData.attendanceCode} onChange={e => setFormData({ ...formData, attendanceCode: e.target.value })} className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-[#4285F4] focus:outline-none" />
+                  <p className="text-xs text-slate-500">Mã chỉ có hiệu lực khi sự kiện đang diễn ra.</p>
                 </div>
                 <div className="space-y-2">
                   <label className="text-sm font-medium text-slate-700">Giảng viên phụ trách</label>

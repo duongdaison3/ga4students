@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { adminAuth, adminDb } from "@/lib/firebase-admin";
 import { hasStaffRole, isAdminEmail } from "@/lib/admin";
+import { getEventStatus } from "@/lib/utils";
+import { createHash } from "crypto";
 
 export const runtime = "nodejs";
 
@@ -16,10 +18,38 @@ export async function POST(req: Request) {
     const userId = decodedToken.uid;
 
     const body = await req.json();
-    const { eventId, missionType, targetUserId, targetUserIds } = body;
+    const { eventId, missionType, targetUserId, targetUserIds, attendanceCode } = body;
 
     if (!eventId || !missionType) {
       return NextResponse.json({ error: "Thiếu thông tin nhiệm vụ" }, { status: 400 });
+    }
+
+    const isSelfAttendance = missionType === "attendance" && !targetUserId && !targetUserIds;
+    if (isSelfAttendance) {
+      const eventDoc = await adminDb.collection("events").doc(eventId).get();
+      if (!eventDoc.exists) {
+        return NextResponse.json({ error: "Sự kiện không tồn tại" }, { status: 404 });
+      }
+
+      const event = eventDoc.data() || {};
+      if (getEventStatus(event.date, event.time) !== "ongoing") {
+        return NextResponse.json({ error: "Chỉ có thể điểm danh trong thời gian sự kiện đang diễn ra." }, { status: 400 });
+      }
+
+      const normalizedCode = typeof attendanceCode === "string" ? attendanceCode.trim().toUpperCase() : "";
+      const codeHash = createHash("sha256").update(normalizedCode).digest("hex");
+      if (!normalizedCode || !event.attendanceCodeHash || codeHash !== event.attendanceCodeHash) {
+        return NextResponse.json({ error: "Mã điểm danh không đúng." }, { status: 400 });
+      }
+
+      const registrationSnapshot = await adminDb.collection("registrations")
+        .where("userId", "==", userId)
+        .where("eventId", "==", eventId)
+        .limit(1)
+        .get();
+      if (registrationSnapshot.empty) {
+        return NextResponse.json({ error: "Bạn cần đăng ký sự kiện trước khi điểm danh." }, { status: 403 });
+      }
     }
 
     if (missionType === "attendance" && targetUserIds && Array.isArray(targetUserIds)) {
@@ -91,14 +121,19 @@ export async function POST(req: Request) {
     let uidToReward = userId; // By default, reward the caller
 
     if (missionType === "attendance") {
-      // Only admins can trigger attendance
-      const callerDoc = await adminDb.collection("users").doc(userId).get();
-      if (!isAdminEmail(decodedToken.email) && (!callerDoc.exists || !hasStaffRole(callerDoc.data()?.role))) {
-        return NextResponse.json({ error: "Chỉ Admin mới có quyền điểm danh" }, { status: 403 });
+      // Staff can mark attendance for others; users can mark themselves with the event code.
+      if (!isSelfAttendance) {
+        const callerDoc = await adminDb.collection("users").doc(userId).get();
+        if (!isAdminEmail(decodedToken.email) && (!callerDoc.exists || !hasStaffRole(callerDoc.data()?.role))) {
+          return NextResponse.json({ error: "Chỉ Admin mới có quyền điểm danh" }, { status: 403 });
+        }
       }
       points = 100;
-      if (!targetUserId) return NextResponse.json({ error: "Thiếu targetUserId" }, { status: 400 });
-      uidToReward = targetUserId;
+      if (targetUserId) {
+        uidToReward = targetUserId;
+      } else if (!isSelfAttendance) {
+        return NextResponse.json({ error: "Thiếu targetUserId" }, { status: 400 });
+      }
     } else if (missionType === "share" || missionType === "recap") {
       points = 100;
     } else if (missionType === "gemini_prompt") {

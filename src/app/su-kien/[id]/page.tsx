@@ -7,7 +7,7 @@ import { db, auth } from "@/lib/firebase";
 import { onAuthStateChanged, User } from "firebase/auth";
 import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
-import { Calendar, Clock, MapPin, ArrowLeft, ArrowRight, User as UserIcon, Share2, MessageCircle, Sparkles, CheckCircle } from "lucide-react";
+import { Calendar, Clock, MapPin, ArrowLeft, ArrowRight, User as UserIcon, Share2, MessageCircle, Sparkles, CheckCircle, KeyRound } from "lucide-react";
 import { getEventStatus } from "@/lib/utils";
 import Link from "next/link";
 import { useNotification } from "@/components/NotificationProvider";
@@ -27,6 +27,7 @@ export default function EventDetailsPage() {
   const [missionLoading, setMissionLoading] = useState<string | null>(null);
   const [shareStep, setShareStep] = useState(0);
   const [recapStep, setRecapStep] = useState(0);
+  const [attendanceCode, setAttendanceCode] = useState("");
 
   useEffect(() => {
     let userUnsubscribe: (() => void) | undefined;
@@ -133,7 +134,7 @@ export default function EventDetailsPage() {
     }
   };
 
-  const handleClaimMission = async (missionType: string) => {
+  const handleClaimMission = async (missionType: string, code?: string) => {
     if (!user || !event) return;
 
     const status = getEventStatus(event.date, event.time);
@@ -148,6 +149,11 @@ export default function EventDetailsPage() {
       return;
     }
 
+    if (missionType === 'attendance' && status !== 'ongoing') {
+      notify("Chỉ có thể điểm danh trong thời gian sự kiện đang diễn ra.");
+      return;
+    }
+
     setMissionLoading(missionType);
     try {
       const idToken = await user.getIdToken();
@@ -157,14 +163,15 @@ export default function EventDetailsPage() {
           "Content-Type": "application/json",
           "Authorization": `Bearer ${idToken}`
         },
-        body: JSON.stringify({ eventId: event.id, missionType, targetUserId: user.uid })
+        body: JSON.stringify({ eventId: event.id, missionType, targetUserId: missionType === 'attendance' ? undefined : user.uid, attendanceCode: code })
       });
 
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || "Lỗi nhận điểm");
 
-      notify(`Thành công! Bạn được cộng ${data.points} điểm.`, "success");
+      notify(missionType === 'attendance' ? "Điểm danh tham gia thành công! Bạn đã được cộng 100 điểm." : `Thành công! Bạn được cộng ${data.points} điểm.`, "success");
       setClaimedMissions([...claimedMissions, missionType]);
+      if (missionType === 'attendance') setAttendanceCode("");
     } catch (error: any) {
       notify(error.message, "error");
     } finally {
@@ -382,13 +389,37 @@ export default function EventDetailsPage() {
                     </h3>
                     <span className="px-2 py-1 bg-amber-100 text-amber-700 text-xs font-bold rounded-lg">+100đ</span>
                   </div>
-                  <p className="text-sm text-slate-500 mb-4">Có mặt tham gia sự kiện và được Admin điểm danh.</p>
+                  <p className="text-sm text-slate-500 mb-4">Nhập mã điểm danh do giảng viên cung cấp trong thời gian sự kiện diễn ra.</p>
                   {claimedMissions.includes('attendance') ? (
                     <div className="flex items-center gap-2 text-green-600 text-sm font-bold">
                       <CheckCircle className="w-4 h-4" /> Đã hoàn thành
                     </div>
                   ) : (
-                    <div className="text-slate-400 text-sm italic">Chờ Admin điểm danh...</div>
+                    <div className="space-y-2">
+                      <div className="flex gap-2">
+                        <div className="relative flex-1">
+                          <KeyRound className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                          <input
+                            type="text"
+                            value={attendanceCode}
+                            onChange={e => setAttendanceCode(e.target.value)}
+                            placeholder="Mã điểm danh"
+                            disabled={missionLoading === 'attendance'}
+                            className="w-full pl-9 pr-3 py-2 bg-white border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-[#4285F4] focus:outline-none disabled:bg-slate-100"
+                          />
+                        </div>
+                        <button
+                          onClick={() => handleClaimMission('attendance', attendanceCode)}
+                          disabled={missionLoading === 'attendance' || getEventStatus(event.date, event.time) !== 'ongoing' || !attendanceCode.trim()}
+                          className="px-3 py-2 bg-[#4285F4] text-white rounded-lg text-sm font-bold hover:bg-blue-600 transition-colors disabled:bg-slate-300 disabled:cursor-not-allowed"
+                        >
+                          {missionLoading === 'attendance' ? 'Đang xử lý...' : 'Điểm danh'}
+                        </button>
+                      </div>
+                      {getEventStatus(event.date, event.time) !== 'ongoing' && (
+                        <p className="text-xs text-slate-400">Tính năng sẽ mở khi sự kiện bắt đầu.</p>
+                      )}
+                    </div>
                   )}
                 </div>
 
