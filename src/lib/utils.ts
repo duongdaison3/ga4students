@@ -31,8 +31,9 @@ export function getEventStatus(dateStr: string, timeStr: string): 'upcoming' | '
     const endHour = parseInt(endTimeParts[0], 10);
     const endMin = parseInt(endTimeParts[1], 10);
 
-    const startTime = new Date(year, month, day, startHour, startMin);
-    const endTime = new Date(year, month, day, endHour, endMin);
+    const vietnamOffsetMs = 7 * 60 * 60 * 1000;
+    const startTime = new Date(Date.UTC(year, month, day, startHour, startMin) - vietnamOffsetMs);
+    const endTime = new Date(Date.UTC(year, month, day, endHour, endMin) - vietnamOffsetMs);
     
     const now = new Date();
 
