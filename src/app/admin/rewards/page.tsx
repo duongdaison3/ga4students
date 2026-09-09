@@ -1,8 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { collection, query, orderBy, getDocs } from "firebase/firestore";
-import { db } from "@/lib/firebase";
+import { auth } from "@/lib/firebase";
+import { onAuthStateChanged } from "firebase/auth";
 import { Gift, CheckCircle, XCircle, Search, RefreshCw, Mail } from "lucide-react";
 import { useNotification } from "@/components/NotificationProvider";
 
@@ -18,12 +18,17 @@ export default function AdminRewardsPage() {
   const [emailMessage, setEmailMessage] = useState("");
   const [isSendingEmail, setIsSendingEmail] = useState(false);
 
-  const fetchRequests = async () => {
+  const fetchRequests = async (idToken?: string) => {
     setLoading(true);
     try {
-      const q = query(collection(db, "reward_requests"), orderBy("createdAt", "desc"));
-      const snap = await getDocs(q);
-      setRequests(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+      const token = idToken || await auth.currentUser?.getIdToken();
+      if (!token) return;
+      const response = await fetch("/api/admin/rewards", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || "Không thể tải yêu cầu đổi quà.");
+      setRequests(data);
     } catch (error) {
       console.error("Error fetching requests:", error);
     } finally {
@@ -32,7 +37,10 @@ export default function AdminRewardsPage() {
   };
 
   useEffect(() => {
-    fetchRequests();
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
+      if (user) await fetchRequests(await user.getIdToken());
+    });
+    return () => unsubscribe();
   }, []);
 
   const updateStatus = async (requestId: string, newStatus: string) => {
@@ -108,7 +116,7 @@ export default function AdminRewardsPage() {
           </h1>
           <p className="text-slate-500 mt-2">Xử lý các yêu cầu đổi quà từ học viên</p>
         </div>
-        <button onClick={fetchRequests} className="flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 rounded-lg text-slate-600 hover:bg-slate-50 transition-colors">
+        <button onClick={() => fetchRequests()} className="flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 rounded-lg text-slate-600 hover:bg-slate-50 transition-colors">
           <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} /> Tải lại
         </button>
       </div>
@@ -156,7 +164,7 @@ export default function AdminRewardsPage() {
                 filteredRequests.map(req => (
                   <tr key={req.id} className="border-b border-slate-100 hover:bg-slate-50">
                     <td className="p-4 text-sm text-slate-500">
-                      {req.createdAt?.seconds ? new Date(req.createdAt.seconds * 1000).toLocaleString("vi-VN") : "N/A"}
+                      {req.createdAt ? new Date(req.createdAt).toLocaleString("vi-VN") : "N/A"}
                     </td>
                     <td className="p-4">
                       <div className="font-bold text-slate-800">{req.userFullName}</div>

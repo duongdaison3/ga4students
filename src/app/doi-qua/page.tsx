@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { onAuthStateChanged, User } from "firebase/auth";
-import { collection, doc, getDoc, getDocs, query, where, orderBy } from "firebase/firestore";
+import { doc, getDoc } from "firebase/firestore";
 import { auth, db } from "@/lib/firebase";
 import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
@@ -56,14 +56,12 @@ export default function RewardStorePage() {
           setUserPoints(uDoc.data().totalPoints || 0);
         }
 
-        // Fetch redemption history
-        const q = query(
-          collection(db, "reward_requests"),
-          where("userId", "==", currentUser.uid),
-          orderBy("createdAt", "desc")
-        );
-        const snap = await getDocs(q);
-        setHistory(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+        const idToken = await currentUser.getIdToken();
+        const historyResponse = await fetch("/api/rewards/history", {
+          headers: { Authorization: `Bearer ${idToken}` },
+        });
+        if (!historyResponse.ok) throw new Error("Không thể tải lịch sử đổi quà.");
+        setHistory(await historyResponse.json());
       } catch (error) {
         console.error("Lỗi lấy dữ liệu:", error);
       } finally {
@@ -120,17 +118,13 @@ export default function RewardStorePage() {
 
       notify(data.message, "success");
 
-      // Cập nhật giao diện nội bộ (giảm điểm, thêm lịch sử)
+      // Cập nhật điểm và tải lại bản ghi thật từ server.
       setUserPoints(prev => prev - selectedReward.points);
-
-      const newRecord = {
-        id: "temp_" + Date.now(),
-        rewardName: selectedReward.name,
-        pointsUsed: selectedReward.points,
-        status: "pending",
-        createdAt: { seconds: Date.now() / 1000 }
-      };
-      setHistory(prev => [newRecord, ...prev]);
+      const historyToken = await user!.getIdToken();
+      const historyResponse = await fetch("/api/rewards/history", {
+        headers: { Authorization: `Bearer ${historyToken}` },
+      });
+      if (historyResponse.ok) setHistory(await historyResponse.json());
 
       setSelectedReward(null);
     } catch (error: any) {
@@ -159,8 +153,11 @@ export default function RewardStorePage() {
       notify(data.message, "success");
       setGiftCode("");
       setGuestEmail("");
-      const newRecord = { id: "gift_" + Date.now(), rewardName: data.message.replace("Nhận quà thành công: ", "").replace(". Admin sẽ liên hệ với bạn sớm.", ""), pointsUsed: 0, status: data.autoCompleted ? "completed" : "pending", createdAt: { seconds: Date.now() / 1000 } };
-      setHistory(prev => [newRecord, ...prev]);
+      if (user) {
+        const idToken = await user.getIdToken();
+        const historyResponse = await fetch("/api/rewards/history", { headers: { Authorization: `Bearer ${idToken}` } });
+        if (historyResponse.ok) setHistory(await historyResponse.json());
+      }
     } catch (error: any) {
       notify(error.message, "error");
     } finally {
@@ -322,7 +319,7 @@ export default function RewardStorePage() {
                         <td className="p-4 font-bold text-slate-800">{item.rewardName}</td>
                         <td className="p-4 text-center text-red-500 font-bold">-{item.pointsUsed}</td>
                         <td className="p-4 text-slate-500 text-sm">
-                          {item.createdAt?.seconds ? new Date(item.createdAt.seconds * 1000).toLocaleString("vi-VN") : "N/A"}
+                          {item.createdAt ? new Date(item.createdAt).toLocaleString("vi-VN") : "N/A"}
                         </td>
                         <td className="p-4 text-center">
                           {item.status === 'pending' && <span className="inline-flex items-center gap-1 text-xs font-bold px-2.5 py-1 rounded bg-amber-50 text-amber-600"><Clock className="w-3 h-3" /> Chờ xử lý</span>}

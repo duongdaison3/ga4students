@@ -4,6 +4,37 @@ import { hasStaffRole, isAdminEmail } from "@/lib/admin";
 
 export const runtime = "nodejs";
 
+export async function GET(req: Request) {
+  try {
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader || !authHeader.startsWith("Bearer ")) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const decodedToken = await adminAuth.verifyIdToken(authHeader.slice(7));
+    const adminDoc = await adminDb.collection("users").doc(decodedToken.uid).get();
+    if (!isAdminEmail(decodedToken.email) && (!adminDoc.exists || !hasStaffRole(adminDoc.data()?.role))) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
+
+    const snapshot = await adminDb.collection("reward_requests").orderBy("createdAt", "desc").get();
+    const requests = snapshot.docs.map((document) => {
+      const data = document.data();
+      return {
+        id: document.id,
+        ...data,
+        createdAt: data.createdAt?.toDate?.()?.toISOString() || null,
+        updatedAt: data.updatedAt?.toDate?.()?.toISOString() || null,
+      };
+    });
+
+    return NextResponse.json(requests);
+  } catch (error) {
+    console.error("Error fetching reward requests:", error);
+    return NextResponse.json({ error: "Không thể tải yêu cầu đổi quà." }, { status: 500 });
+  }
+}
+
 export async function POST(req: Request) {
   try {
     const authHeader = req.headers.get("Authorization");
