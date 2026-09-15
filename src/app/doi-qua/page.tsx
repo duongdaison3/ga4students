@@ -12,14 +12,13 @@ import { useRouter } from "next/navigation";
 import { useNotification } from "@/components/NotificationProvider";
 
 const REWARDS = [
-  { id: "gemini_pro_3m", name: "Gemini Pro 3 tháng", points: 2500, type: "digital", limit: "Số lượng có hạn" },
-  { id: "gemini_pro_1m", name: "Gemini Pro 1 tháng", points: 2000, type: "digital", limit: "Số lượng có hạn" },
-  { id: "canva_pro_1m", name: "Canva Pro 1 tháng", points: 1500, type: "digital", limit: "Số lượng có hạn" },
-  { id: "digital_random", name: "Bộ quà tặng Digital ngẫu nhiên", points: 1200, type: "digital", limit: "Số lượng có hạn" },
-  { id: "phys_combo", name: "Bộ quà tặng: bút, móc khóa Google", points: 650, type: "physical", limit: "Số lượng có hạn" },
-  { id: "phys_keychain", name: "Móc khóa Google", points: 350, type: "physical", limit: "Số lượng có hạn" },
-  { id: "phys_pen", name: "Bút bi Google", points: 350, type: "physical", limit: "Số lượng có hạn" },
-  { id: "phys_random", name: "Quà lưu niệm ngẫu nhiên", points: 250, type: "physical", limit: "Số lượng có hạn" },
+  { id: "gemini_pro_3m", name: "Gemini Pro 3 tháng", points: 2500, type: "digital", limit: "3" },
+  { id: "gemini_pro_1m", name: "Gemini Pro 1 tháng", points: 2000, type: "digital", limit: "10" },
+  { id: "canva_pro_1m", name: "Canva Pro 1 tháng", points: 1500, type: "digital", limit: "10" },
+  { id: "digital_random", name: "Bộ quà tặng Digital ngẫu nhiên", points: 1200, type: "digital", limit: "100" },
+  { id: "phys_combo", name: "Bộ quà tặng: bút, móc khóa Google", points: 650, type: "physical", limit: "100" },
+  { id: "phys_keychain", name: "Móc khóa Google", points: 350, type: "physical", limit: "100" },
+  { id: "phys_pen", name: "Bút bi Google", points: 350, type: "physical", limit: "100" },
 ];
 
 export default function RewardStorePage() {
