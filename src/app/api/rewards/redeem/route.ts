@@ -16,19 +16,14 @@ export async function POST(req: Request) {
     const email = decodedToken.email || "";
 
     const body = await req.json();
-    const { rewardId, rewardName, points, type, address, phone } = body;
+    const { rewardId, address, phone } = body;
 
-    if (!rewardId || !rewardName || !points || !type) {
+    if (!rewardId) {
       return NextResponse.json({ error: "Thiếu thông tin phần quà" }, { status: 400 });
-    }
-
-    if (type === "physical" && (!address || !phone)) {
-      return NextResponse.json({ error: "Vui lòng cung cấp đầy đủ số điện thoại và địa chỉ nhận quà" }, { status: 400 });
     }
 
     let success = false;
 
-    // Use transaction to atomically check and deduct points
     await adminDb.runTransaction(async (transaction) => {
       const userRef = adminDb.collection("users").doc(userId);
       const userDoc = await transaction.get(userRef);
@@ -39,25 +34,39 @@ export async function POST(req: Request) {
 
       const currentPoints = userDoc.data()?.totalPoints || 0;
       const userFullName = userDoc.data()?.fullName || email.split('@')[0];
+      const rewardRef = adminDb.collection("rewards").doc(String(rewardId));
+      const rewardDoc = await transaction.get(rewardRef);
 
-      if (currentPoints < points) {
+      if (!rewardDoc.exists) throw new Error("REWARD_NOT_FOUND");
+      const reward = rewardDoc.data()!;
+      const rewardType = reward.type === "physical" ? "physical" : "digital";
+      const rewardPoints = Number(reward.points || 0);
+      const maxStock = Math.max(0, Number(reward.maxStock ?? 0));
+      const redeemedCount = Math.max(0, Number(reward.redeemedCount ?? 0));
+
+      if (reward.active === false || redeemedCount >= maxStock) throw new Error("REWARD_OUT_OF_STOCK");
+      if (rewardType === "physical" && (!address || !phone)) {
+        throw new Error("PHYSICAL_DETAILS_REQUIRED");
+      }
+
+      if (currentPoints < rewardPoints) {
         throw new Error("NOT_ENOUGH_POINTS");
       }
 
-      // Deduct points
-      const newPoints = currentPoints - points;
+      const newPoints = currentPoints - rewardPoints;
       transaction.update(userRef, { totalPoints: newPoints });
+      transaction.update(rewardRef, { redeemedCount: redeemedCount + 1, updatedAt: new Date() });
 
-      // Create reward request
       const requestRef = adminDb.collection("reward_requests").doc();
       transaction.set(requestRef, {
         userId,
         userEmail: email,
         userFullName,
         rewardId,
-        rewardName,
-        pointsUsed: points,
-        type,
+        rewardName: reward.name,
+        pointsUsed: rewardPoints,
+        type: rewardType,
+        stockCounted: true,
         address: address || "",
         phone: phone || "",
         status: "pending", // pending, processing, completed, rejected
@@ -76,12 +85,22 @@ export async function POST(req: Request) {
     }
 
     return NextResponse.json({ error: "Lỗi không xác định" }, { status: 500 });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Error redeeming reward:", error);
-    if (error.message === "NOT_ENOUGH_POINTS") {
+    const errorMessage = error instanceof Error ? error.message : "";
+    if (errorMessage === "NOT_ENOUGH_POINTS") {
       return NextResponse.json({ error: "Bạn không đủ điểm để đổi phần quà này." }, { status: 400 });
     }
-    if (error.message === "USER_NOT_FOUND") {
+    if (errorMessage === "REWARD_OUT_OF_STOCK") {
+      return NextResponse.json({ error: "Tạm hết phần quà này. Admin đã được thông báo để bổ sung thêm." }, { status: 409 });
+    }
+    if (errorMessage === "REWARD_NOT_FOUND") {
+      return NextResponse.json({ error: "Phần quà không còn tồn tại." }, { status: 404 });
+    }
+    if (errorMessage === "PHYSICAL_DETAILS_REQUIRED") {
+      return NextResponse.json({ error: "Vui lòng cung cấp đầy đủ số điện thoại và địa chỉ nhận quà" }, { status: 400 });
+    }
+    if (errorMessage === "USER_NOT_FOUND") {
       return NextResponse.json({ error: "Không tìm thấy hồ sơ người dùng." }, { status: 404 });
     }
     return NextResponse.json({ error: "Hệ thống đang bận, vui lòng thử lại sau." }, { status: 500 });

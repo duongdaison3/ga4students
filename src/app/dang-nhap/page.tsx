@@ -6,13 +6,14 @@ import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
 import { Mail, Lock, LogIn, Eye, EyeOff } from "lucide-react";
 
-import { auth, db } from "@/lib/firebase";
+import { auth } from "@/lib/firebase";
 import { signInWithEmailAndPassword } from "firebase/auth";
-import { doc, getDoc, collection, query, where, getDocs, setDoc } from "firebase/firestore";
 import { useRouter } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 
 export default function LoginPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [formData, setFormData] = useState({
     email: "",
     password: "",
@@ -32,12 +33,13 @@ export default function LoginPage() {
     
     try {
       await signInWithEmailAndPassword(auth, formData.email, formData.password);
-      // Đăng nhập thành công, chuyển hướng về trang chủ
-      router.push("/");
-    } catch (err: any) {
+      const redirect = searchParams.get("redirect");
+      router.push(redirect?.startsWith("/") ? redirect : "/");
+    } catch (err: unknown) {
       console.error("Lỗi đăng nhập:", err);
       // Firebase auth error message handling
-      if (err.code === 'auth/invalid-credential' || err.code === 'auth/wrong-password') {
+      const errorCode = typeof err === "object" && err !== null && "code" in err ? String(err.code) : "";
+      if (errorCode === 'auth/invalid-credential' || errorCode === 'auth/wrong-password') {
         setError("Email hoặc Mật khẩu không chính xác.");
       } else {
         setError("Đã xảy ra lỗi hệ thống, vui lòng thử lại sau.");

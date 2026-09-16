@@ -8,28 +8,20 @@ import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
 import { Gift, AlertCircle, ShoppingBag, History, CheckCircle, Clock, XCircle, ArrowRight, Ticket } from "lucide-react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { useNotification } from "@/components/NotificationProvider";
+import type { RewardCatalogItem } from "@/lib/rewards";
 
-const REWARDS = [
-  { id: "gemini_pro_3m", name: "Gemini Pro 3 tháng", points: 2500, type: "digital", limit: "3" },
-  { id: "gemini_pro_1m", name: "Gemini Pro 1 tháng", points: 2000, type: "digital", limit: "10" },
-  { id: "canva_pro_1m", name: "Canva Pro 1 tháng", points: 1500, type: "digital", limit: "10" },
-  { id: "digital_random", name: "Bộ quà tặng Digital ngẫu nhiên", points: 1200, type: "digital", limit: "100" },
-  { id: "phys_combo", name: "Bộ quà tặng: bút, móc khóa Google", points: 650, type: "physical", limit: "100" },
-  { id: "phys_keychain", name: "Móc khóa Google", points: 350, type: "physical", limit: "100" },
-  { id: "phys_pen", name: "Bút bi Google", points: 350, type: "physical", limit: "100" },
-];
+type RewardHistoryItem = { id: string; rewardName: string; pointsUsed: number; createdAt?: string; status: string };
 
 export default function RewardStorePage() {
-  const router = useRouter();
   const { notify, confirm } = useNotification();
   const [user, setUser] = useState<User | null>(null);
   const [userPoints, setUserPoints] = useState(0);
-  const [history, setHistory] = useState<any[]>([]);
+  const [history, setHistory] = useState<RewardHistoryItem[]>([]);
+  const [rewards, setRewards] = useState<RewardCatalogItem[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const [selectedReward, setSelectedReward] = useState<any | null>(null);
+  const [selectedReward, setSelectedReward] = useState<RewardCatalogItem | null>(null);
   const [isRedeeming, setIsRedeeming] = useState(false);
   const [giftCode, setGiftCode] = useState("");
   const [isRedeemingCode, setIsRedeemingCode] = useState(false);
@@ -41,6 +33,13 @@ export default function RewardStorePage() {
   const [formError, setFormError] = useState("");
 
   useEffect(() => {
+    fetch("/api/rewards/catalog")
+      .then(async response => {
+        if (!response.ok) throw new Error("Không thể tải danh sách quà.");
+        setRewards(await response.json());
+      })
+      .catch(error => console.error("Lỗi lấy danh sách quà:", error));
+
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
       if (!currentUser) {
         setLoading(false);
@@ -69,9 +68,13 @@ export default function RewardStorePage() {
     });
 
     return () => unsubscribe();
-  }, [router]);
+  }, []);
 
-  const handleRedeemClick = (reward: any) => {
+  const handleRedeemClick = (reward: RewardCatalogItem) => {
+    if (!reward.active || reward.redeemedCount >= reward.maxStock) {
+      notify("Tạm hết phần quà này. Vui lòng quay lại sau.", "error");
+      return;
+    }
     if (userPoints < reward.points) {
       notify("Bạn chưa đủ điểm để đổi phần quà này.", "error");
       return;
@@ -86,12 +89,15 @@ export default function RewardStorePage() {
     e.preventDefault();
     setFormError("");
 
-    if (selectedReward.type === "physical" && (!address || !phone)) {
+    const reward = selectedReward;
+    if (!reward) return;
+
+    if (reward.type === "physical" && (!address || !phone)) {
       setFormError("Vui lòng điền đầy đủ số điện thoại và địa chỉ nhận quà.");
       return;
     }
 
-    if (!await confirm(`Xác nhận dùng ${selectedReward.points} điểm để đổi ${selectedReward.name}?`)) return;
+    if (!await confirm(`Xác nhận dùng ${reward.points} điểm để đổi ${reward.name}?`)) return;
 
     setIsRedeeming(true);
     try {
@@ -103,10 +109,10 @@ export default function RewardStorePage() {
           "Authorization": `Bearer ${idToken}`
         },
         body: JSON.stringify({
-          rewardId: selectedReward.id,
-          rewardName: selectedReward.name,
-          points: selectedReward.points,
-          type: selectedReward.type,
+          rewardId: reward.id,
+          rewardName: reward.name,
+          points: reward.points,
+          type: reward.type,
           address,
           phone
         })
@@ -118,7 +124,7 @@ export default function RewardStorePage() {
       notify(data.message, "success");
 
       // Cập nhật điểm và tải lại bản ghi thật từ server.
-      setUserPoints(prev => prev - selectedReward.points);
+  setUserPoints(prev => prev - reward.points);
       const historyToken = await user!.getIdToken();
       const historyResponse = await fetch("/api/rewards/history", {
         headers: { Authorization: `Bearer ${historyToken}` },
@@ -126,8 +132,8 @@ export default function RewardStorePage() {
       if (historyResponse.ok) setHistory(await historyResponse.json());
 
       setSelectedReward(null);
-    } catch (error: any) {
-      notify(error.message, "error");
+    } catch (error: unknown) {
+      notify(error instanceof Error ? error.message : "Lỗi hệ thống", "error");
     } finally {
       setIsRedeeming(false);
     }
@@ -157,8 +163,8 @@ export default function RewardStorePage() {
         const historyResponse = await fetch("/api/rewards/history", { headers: { Authorization: `Bearer ${idToken}` } });
         if (historyResponse.ok) setHistory(await historyResponse.json());
       }
-    } catch (error: any) {
-      notify(error.message, "error");
+    } catch (error: unknown) {
+      notify(error instanceof Error ? error.message : "Lỗi hệ thống", "error");
     } finally {
       setIsRedeemingCode(false);
     }
@@ -259,7 +265,10 @@ export default function RewardStorePage() {
           {/* Grid Quà tặng */}
           <div className={`grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 mb-16 relative z-10 ${!user ? "opacity-50" : ""}`}>
             {!user && <div className="absolute inset-0 z-20 flex items-center justify-center rounded-2xl bg-slate-100/40 p-6"><div className="text-center"><p className="font-bold text-slate-800 mb-3">Đăng nhập hoặc đăng ký để đổi quà bằng điểm</p><Link href="/dang-nhap?redirect=/doi-qua" className="inline-flex items-center gap-2 rounded-lg bg-[#4285F4] px-4 py-2 font-bold text-white">Đăng nhập / Đăng ký <ArrowRight className="w-4 h-4" /></Link></div></div>}
-            {REWARDS.map((reward) => (
+            {rewards.map((reward) => {
+              const remaining = Math.max(0, reward.maxStock - reward.redeemedCount);
+              const outOfStock = !reward.active || remaining === 0;
+              return (
               <div key={reward.id} className="bg-white rounded-2xl p-6 shadow-xl border border-slate-100 flex flex-col justify-between hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 relative overflow-hidden group">
                 <div className="absolute top-0 right-0 p-2 opacity-5 text-slate-900 group-hover:opacity-10 transition-opacity">
                   <Gift className="w-24 h-24 -mr-6 -mt-6" />
@@ -267,7 +276,7 @@ export default function RewardStorePage() {
 
                 <div>
                   <div className="inline-block px-2 py-1 bg-red-50 text-red-600 text-[10px] font-black uppercase tracking-wider rounded mb-3">
-                    {reward.limit}
+                    {outOfStock ? "Tạm hết" : `Còn ${remaining}/${reward.maxStock}`}
                   </div>
                   <h3 className="text-lg font-bold text-slate-800 mb-2 leading-tight min-h-[56px]">{reward.name}</h3>
                   <div className="text-2xl font-black text-[#4285F4] mb-6">
@@ -277,16 +286,17 @@ export default function RewardStorePage() {
 
                 <button
                   onClick={() => handleRedeemClick(reward)}
-                  disabled={userPoints < reward.points}
+                  disabled={outOfStock || userPoints < reward.points}
                   className={`w-full py-2.5 rounded-xl font-bold transition-colors ${userPoints >= reward.points
                     ? "bg-[#4285F4] text-white hover:bg-blue-600 shadow-md shadow-blue-200"
                     : "bg-slate-100 text-slate-400 cursor-not-allowed"
                     }`}
                 >
-                  {userPoints >= reward.points ? "Đổi Quà" : "Chưa đủ điểm"}
+                  {outOfStock ? "Tạm hết" : userPoints >= reward.points ? "Đổi Quà" : "Chưa đủ điểm"}
                 </button>
               </div>
-            ))}
+              );
+            })}
           </div>
 
           {/* Lịch sử đổi quà */}

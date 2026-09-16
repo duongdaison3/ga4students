@@ -1,19 +1,26 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { auth } from "@/lib/firebase";
 import { onAuthStateChanged } from "firebase/auth";
-import { Gift, CheckCircle, XCircle, Search, RefreshCw, Mail } from "lucide-react";
+import { Gift, RefreshCw, Mail, Plus, Pencil, Trash2, ExternalLink } from "lucide-react";
+import Link from "next/link";
 import { useNotification } from "@/components/NotificationProvider";
+import type { RewardCatalogItem } from "@/lib/rewards";
+
+type AdminRewardRequest = { id: string; status: string; userFullName?: string; userEmail?: string; rewardName?: string; pointsUsed?: number; type?: string; phone?: string; address?: string; description?: string; giftCodeId?: string; createdAt?: string; updatedAt?: string };
 
 export default function AdminRewardsPage() {
-  const [requests, setRequests] = useState<any[]>([]);
+  const [requests, setRequests] = useState<AdminRewardRequest[]>([]);
   const [loading, setLoading] = useState(true);
   const [processingId, setProcessingId] = useState<string | null>(null);
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [catalog, setCatalog] = useState<RewardCatalogItem[]>([]);
+  const [editingReward, setEditingReward] = useState<RewardCatalogItem | null>(null);
   const { notify, confirm } = useNotification();
 
   const [filter, setFilter] = useState("all");
-  const [emailRequest, setEmailRequest] = useState<any | null>(null);
+  const [emailRequest, setEmailRequest] = useState<AdminRewardRequest | null>(null);
   const [emailSubject, setEmailSubject] = useState("Chúc mừng bạn đã nhận được quà tặng");
   const [emailMessage, setEmailMessage] = useState("");
   const [isSendingEmail, setIsSendingEmail] = useState(false);
@@ -36,12 +43,28 @@ export default function AdminRewardsPage() {
     }
   };
 
+  const fetchCatalog = useCallback(async () => {
+    try {
+      const token = await auth.currentUser?.getIdToken();
+      if (!token) return;
+      const response = await fetch("/api/admin/rewards?view=catalog", { headers: { Authorization: `Bearer ${token}` } });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || "Không thể tải kho quà.");
+      setCatalog(data);
+    } catch (error) {
+      notify(error instanceof Error ? error.message : "Không thể tải kho quà.", "error");
+    }
+  }, [notify]);
+
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
-      if (user) await fetchRequests(await user.getIdToken());
+      if (user) {
+        await fetchRequests(await user.getIdToken());
+        await fetchCatalog();
+      }
     });
     return () => unsubscribe();
-  }, []);
+  }, [fetchCatalog]);
 
   const updateStatus = async (requestId: string, newStatus: string) => {
     if (newStatus === "rejected") {
@@ -71,16 +94,70 @@ export default function AdminRewardsPage() {
       
       // Update UI
       setRequests(prev => prev.map(r => r.id === requestId ? { ...r, status: newStatus } : r));
-    } catch (error: any) {
-      notify(error.message, "error");
+      setSelectedIds(prev => prev.filter(id => id !== requestId));
+      if (newStatus === "rejected") await fetchCatalog();
+    } catch (error: unknown) {
+      notify(error instanceof Error ? error.message : "Lỗi hệ thống", "error");
     } finally {
       setProcessingId(null);
     }
   };
 
-  const filteredRequests = requests.filter(r => filter === "all" || r.status === filter);
+  const bulkUpdate = async (newStatus: string) => {
+    if (!selectedIds.length) return;
+    const label = newStatus === "rejected" ? "hủy và hoàn điểm" : newStatus === "processing" ? "chuyển sang đang giao" : "đánh dấu hoàn thành";
+    if (!await confirm(`Bạn có chắc muốn ${label} ${selectedIds.length} đơn đã chọn?`)) return;
+    setProcessingId("bulk");
+    try {
+      const idToken = await auth.currentUser?.getIdToken();
+      const res = await fetch("/api/admin/rewards", { method: "POST", headers: { "Content-Type": "application/json", Authorization: `Bearer ${idToken}` }, body: JSON.stringify({ requestIds: selectedIds, status: newStatus }) });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Lỗi hệ thống");
+      notify(data.message, "success");
+      setRequests(prev => prev.map(request => selectedIds.includes(request.id) ? { ...request, status: newStatus } : request));
+      setSelectedIds([]);
+      if (newStatus === "rejected") await fetchCatalog();
+    } catch (error: unknown) {
+      notify(error instanceof Error ? error.message : "Lỗi hệ thống", "error");
+    } finally {
+      setProcessingId(null);
+    }
+  };
 
-  const openEmail = (request: any) => {
+  const saveReward = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (!editingReward) return;
+    try {
+      const token = await auth.currentUser?.getIdToken();
+      const res = await fetch("/api/admin/rewards", { method: "POST", headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` }, body: JSON.stringify({ catalogAction: "save", ...editingReward }) });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Không thể lưu phần quà.");
+      notify(data.message, "success");
+      setEditingReward(null);
+      await fetchCatalog();
+    } catch (error: unknown) {
+      notify(error instanceof Error ? error.message : "Không thể lưu phần quà.", "error");
+    }
+  };
+
+  const deleteReward = async (reward: RewardCatalogItem) => {
+    if (!await confirm(`Xóa phần quà ${reward.name}? Lịch sử đổi quà cũ vẫn được giữ lại.`)) return;
+    try {
+      const token = await auth.currentUser?.getIdToken();
+      const res = await fetch("/api/admin/rewards", { method: "POST", headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` }, body: JSON.stringify({ catalogAction: "delete", id: reward.id }) });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Không thể xóa phần quà.");
+      setCatalog(prev => prev.filter(item => item.id !== reward.id));
+      notify(data.message, "success");
+    } catch (error: unknown) {
+      notify(error instanceof Error ? error.message : "Không thể xóa phần quà.", "error");
+    }
+  };
+
+  const filteredRequests = requests.filter(r => filter === "all" || r.status === filter);
+  const allFilteredSelected = filteredRequests.length > 0 && filteredRequests.every(request => selectedIds.includes(request.id));
+
+  const openEmail = (request: AdminRewardRequest) => {
     setEmailRequest(request);
     setEmailSubject("Chúc mừng bạn đã nhận được quà tặng");
     setEmailMessage(request.description || `Chúc mừng bạn đã nhận được ${request.rewardName}.`);
@@ -99,8 +176,8 @@ export default function AdminRewardsPage() {
       notify(data.message, "success");
       setRequests(prev => prev.map(item => item.id === emailRequest.id ? { ...item, status: "completed" } : item));
       setEmailRequest(null);
-    } catch (error: any) {
-      notify(error.message, "error");
+    } catch (error: unknown) {
+      notify(error instanceof Error ? error.message : "Lỗi hệ thống", "error");
     } finally {
       setIsSendingEmail(false);
     }
@@ -119,6 +196,25 @@ export default function AdminRewardsPage() {
         <button onClick={() => fetchRequests()} className="flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 rounded-lg text-slate-600 hover:bg-slate-50 transition-colors">
           <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} /> Tải lại
         </button>
+      </div>
+
+      <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 mb-8">
+        <div className="flex flex-col md:flex-row justify-between md:items-center gap-3 mb-4">
+          <div><h2 className="text-xl font-bold text-slate-800">Kho quà và giới hạn đổi</h2><p className="text-sm text-slate-500 mt-1">Số đã đổi được cập nhật atomically khi người dùng đổi quà.</p></div>
+          <button onClick={() => setEditingReward({ id: `reward_${Date.now()}`, name: "", points: 0, type: "digital", maxStock: 1, redeemedCount: 0, active: true })} className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-[#4285F4] text-white font-bold"><Plus className="w-4 h-4" />Thêm quà</button>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          {catalog.map(reward => {
+            const remaining = Math.max(0, reward.maxStock - reward.redeemedCount);
+            const exhausted = !reward.active || remaining === 0;
+            return <div key={reward.id} className={`border rounded-xl p-4 ${exhausted ? "border-red-200 bg-red-50" : "border-slate-200"}`}>
+              <div className="flex justify-between gap-3"><div><div className="font-bold text-slate-800">{reward.name}</div><div className="text-sm text-slate-500">{reward.points} điểm · {reward.type === "physical" ? "Vật lý" : "Digital"}</div></div><span className={`text-xs font-bold px-2 py-1 rounded ${exhausted ? "bg-red-100 text-red-700" : "bg-green-100 text-green-700"}`}>{exhausted ? "Đã hết / tắt" : `Còn ${remaining}`}</span></div>
+              <div className="text-sm mt-3 text-slate-600">Đã đổi: <strong>{reward.redeemedCount}</strong> / {reward.maxStock}</div>
+              {exhausted && <div className="text-xs font-semibold text-red-700 mt-2">Cảnh báo: quà này đã hết, cần bổ sung hoặc tăng limit.</div>}
+              <div className="flex gap-2 mt-3"><button title="Sửa phần quà" onClick={() => setEditingReward(reward)} className="p-2 rounded bg-slate-100 hover:bg-slate-200"><Pencil className="w-4 h-4" /></button><button title="Xóa phần quà" onClick={() => deleteReward(reward)} className="p-2 rounded bg-red-50 text-red-600 hover:bg-red-100"><Trash2 className="w-4 h-4" /></button></div>
+            </div>;
+          })}
+        </div>
       </div>
 
       <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
@@ -143,10 +239,13 @@ export default function AdminRewardsPage() {
           ))}
         </div>
 
+        {selectedIds.length > 0 && <div className="px-6 py-3 bg-blue-50 border-b border-blue-100 flex flex-wrap items-center gap-2"><span className="text-sm font-bold text-blue-800">Đã chọn {selectedIds.length}</span><button onClick={() => bulkUpdate("processing")} disabled={processingId === "bulk"} className="px-3 py-1.5 rounded bg-blue-600 text-white text-xs font-bold">Đang giao</button><button onClick={() => bulkUpdate("completed")} disabled={processingId === "bulk"} className="px-3 py-1.5 rounded bg-green-600 text-white text-xs font-bold">Hoàn thành</button><button onClick={() => bulkUpdate("rejected")} disabled={processingId === "bulk"} className="px-3 py-1.5 rounded bg-red-600 text-white text-xs font-bold">Hủy & hoàn điểm</button></div>}
+
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="bg-slate-50 border-b border-slate-200 text-sm font-semibold text-slate-600">
+                <th className="p-4"><input type="checkbox" checked={allFilteredSelected} onChange={() => setSelectedIds(allFilteredSelected ? selectedIds.filter(id => !filteredRequests.some(request => request.id === id)) : Array.from(new Set([...selectedIds, ...filteredRequests.map(request => request.id)])))} aria-label="Chọn tất cả đơn đang hiển thị" /></th>
                 <th className="p-4">Thời gian</th>
                 <th className="p-4">Học viên</th>
                 <th className="p-4">Phần quà (Điểm)</th>
@@ -157,16 +256,18 @@ export default function AdminRewardsPage() {
             </thead>
             <tbody>
               {loading ? (
-                <tr><td colSpan={6} className="p-10 text-center text-slate-500">Đang tải dữ liệu...</td></tr>
+                <tr><td colSpan={7} className="p-10 text-center text-slate-500">Đang tải dữ liệu...</td></tr>
               ) : filteredRequests.length === 0 ? (
-                <tr><td colSpan={6} className="p-10 text-center text-slate-500">Không có yêu cầu nào.</td></tr>
+                <tr><td colSpan={7} className="p-10 text-center text-slate-500">Không có yêu cầu nào.</td></tr>
               ) : (
                 filteredRequests.map(req => (
                   <tr key={req.id} className="border-b border-slate-100 hover:bg-slate-50">
+                    <td className="p-4"><input type="checkbox" checked={selectedIds.includes(req.id)} onChange={() => setSelectedIds(prev => prev.includes(req.id) ? prev.filter(id => id !== req.id) : [...prev, req.id])} disabled={req.status === "rejected" || req.status === "completed"} aria-label={`Chọn đơn ${req.id}`} /></td>
                     <td className="p-4 text-sm text-slate-500">
                       {req.createdAt ? new Date(req.createdAt).toLocaleString("vi-VN") : "N/A"}
                     </td>
                     <td className="p-4">
+                      <Link href={`/admin/rewards/${req.id}`} className="inline-flex items-center gap-1 text-xs font-bold text-blue-600 hover:underline mb-2"><ExternalLink className="w-3 h-3" />Xem chi tiết</Link>
                       <div className="font-bold text-slate-800">{req.userFullName}</div>
                       <div className="text-sm text-slate-500">{req.userEmail}</div>
                     </td>
@@ -237,6 +338,8 @@ export default function AdminRewardsPage() {
           </table>
         </div>
       </div>
+
+      {editingReward && <div className="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4"><form onSubmit={saveReward} className="bg-white rounded-2xl p-6 w-full max-w-lg shadow-2xl"><h2 className="text-xl font-bold text-slate-800 mb-5">{catalog.some(item => item.id === editingReward.id) ? "Sửa phần quà" : "Thêm phần quà"}</h2><div className="grid grid-cols-1 md:grid-cols-2 gap-4"><label className="text-sm font-semibold text-slate-700 md:col-span-2">Mã quà<input required disabled={catalog.some(item => item.id === editingReward.id)} value={editingReward.id} onChange={event => setEditingReward({ ...editingReward, id: event.target.value.trim().toLowerCase().replace(/[^a-z0-9_]/g, "_") })} className="mt-1 w-full border rounded-lg p-3 disabled:bg-slate-100" /></label><label className="text-sm font-semibold text-slate-700 md:col-span-2">Tên quà<input required value={editingReward.name} onChange={event => setEditingReward({ ...editingReward, name: event.target.value })} className="mt-1 w-full border rounded-lg p-3" /></label><label className="text-sm font-semibold text-slate-700">Điểm<input required min="0" type="number" value={editingReward.points} onChange={event => setEditingReward({ ...editingReward, points: Number(event.target.value) })} className="mt-1 w-full border rounded-lg p-3" /></label><label className="text-sm font-semibold text-slate-700">Limit tổng<input required min={editingReward.redeemedCount} type="number" value={editingReward.maxStock} onChange={event => setEditingReward({ ...editingReward, maxStock: Number(event.target.value) })} className="mt-1 w-full border rounded-lg p-3" /></label><label className="text-sm font-semibold text-slate-700">Loại<select value={editingReward.type} onChange={event => setEditingReward({ ...editingReward, type: event.target.value as RewardCatalogItem["type"] })} className="mt-1 w-full border rounded-lg p-3"><option value="digital">Digital</option><option value="physical">Vật lý</option></select></label><label className="flex items-center gap-2 text-sm font-semibold text-slate-700 mt-7"><input type="checkbox" checked={editingReward.active} onChange={event => setEditingReward({ ...editingReward, active: event.target.checked })} /> Đang mở đổi</label><label className="text-sm font-semibold text-slate-700 md:col-span-2">Mô tả<textarea value={editingReward.description || ""} onChange={event => setEditingReward({ ...editingReward, description: event.target.value })} className="mt-1 w-full border rounded-lg p-3 min-h-20" /></label></div><div className="flex justify-end gap-3 mt-5"><button type="button" onClick={() => setEditingReward(null)} className="px-4 py-2 rounded-lg bg-slate-100 text-slate-700 font-semibold">Hủy</button><button type="submit" className="px-4 py-2 rounded-lg bg-[#4285F4] text-white font-bold">Lưu phần quà</button></div></form></div>}
 
       {emailRequest && (
         <div className="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4">
